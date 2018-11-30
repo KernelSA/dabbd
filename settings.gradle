@@ -1,0 +1,5 @@
+rootProject.name = 'dabbd'
+include 'dabbd-commons'
+include 'event-listener'
+include 'dabbd-rest-api' 
+
