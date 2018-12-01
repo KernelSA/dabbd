@@ -19,6 +19,8 @@ public class PersistenceService {
 
     @PostConstruct
     public void check() {
+       log.info("=> PersistenceService PostConstruct");
+
         List<Map<String, Object>> maps = jdbcTemplate.queryForList(
                 "SELECT table_name FROM information_schema.tables WHERE table_schema='public'");
         maps.forEach(stringObjectMap -> {

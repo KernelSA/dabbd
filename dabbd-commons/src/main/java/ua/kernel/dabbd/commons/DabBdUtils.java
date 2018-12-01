@@ -12,4 +12,15 @@ public final class DabBdUtils {
         log.info("UTILS!");
     }
 
+
+    public static void logSystemProperties() {
+        log.info("------------------------------------------");
+        log.info("System Properties: ");
+        System.getProperties().entrySet()
+                .forEach(objectObjectEntry ->
+                        log.info(">>>>\t" + objectObjectEntry.getKey() + " : " + objectObjectEntry.getValue()));
+        log.info("------------------------------------------");
+    }
+
+
 }
