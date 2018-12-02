@@ -16,4 +16,5 @@ public class TrackerEvent {
     private Integer powerLevel;
     private Integer gsmSignal;
     private Integer gpsSattelites;
+
 }

@@ -1,4 +1,4 @@
-package ua.kernel.dabbd.commons;
+package ua.kernel.dabbd.commons.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import static ua.kernel.dabbd.commons.DabBdUtils.logSystemProperties;
+import static ua.kernel.dabbd.commons.util.DabBdUtils.logSystemProperties;
 
 @Slf4j
 @SpringBootApplication

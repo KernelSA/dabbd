@@ -1,25 +1,19 @@
 package ua.kernel.dabbd.eventlistener.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ua.kernel.dabbd.eventlistener.config.EventListenerConfig;
 
-import javax.annotation.PostConstruct;
-
-//@Slf4j
-//@Service
+@Slf4j
+@Service
 public class EventStreamListener {
 
-//    @Autowired
-    private KafkaConsumer<String,String> kafkaConsumer;
+    @Autowired
+    private EventListenerConfig config;
 
-//    @PostConstruct
-    public void test(){
+    public void init() {
 
-        ConsumerRecords<String, String> poll = kafkaConsumer.poll(1000);
-//        poll.
 
     }
 
