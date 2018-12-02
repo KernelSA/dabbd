@@ -2,7 +2,6 @@ package ua.kernel.dabbd.eventlistener.config;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.connect.json.JsonDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +11,7 @@ import org.springframework.kafka.config.KafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 
 import java.util.HashMap;
@@ -38,7 +38,7 @@ public class ReceiverConfig {
 
     @Bean
     public ConsumerFactory<String, TrackerEvent> consumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(consumerConfigs());
+        return new DefaultKafkaConsumerFactory<>(consumerConfigs(), new StringDeserializer(), new JsonDeserializer<>());
     }
 
     @Bean

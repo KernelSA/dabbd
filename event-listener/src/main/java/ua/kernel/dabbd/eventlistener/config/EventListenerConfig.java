@@ -4,11 +4,10 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 @Data
 @Configuration
-@EnableConfigurationProperties({EventListenerConfig.class})
+//@EnableConfigurationProperties({EventListenerConfig.class})
 @ConfigurationProperties(prefix = "kernel.dabbd.listener")
 public class EventListenerConfig {
 
