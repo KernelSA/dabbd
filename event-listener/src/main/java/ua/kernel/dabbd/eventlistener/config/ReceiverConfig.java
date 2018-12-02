@@ -38,7 +38,7 @@ public class ReceiverConfig {
 
     @Bean
     public ConsumerFactory<String, TrackerEvent> consumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(consumerConfigs(), new StringDeserializer(), new JsonDeserializer<>());
+        return new DefaultKafkaConsumerFactory<>(consumerConfigs(), new StringDeserializer(), new JsonDeserializer<>(TrackerEvent.class));
     }
 
     @Bean
