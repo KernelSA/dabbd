@@ -1,5 +1,6 @@
 package ua.kernel.dabbd.eventlistener.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,7 @@ import ua.kernel.dabbd.commons.model.TrackerEvent;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @EnableKafka
 @Configuration
 public class ReceiverConfig {
@@ -37,7 +39,7 @@ public class ReceiverConfig {
 //        return props;
 //    }
 
-    @Bean
+    //    @Bean
     public ConsumerFactory<String, TrackerEvent> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -53,11 +55,15 @@ public class ReceiverConfig {
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, TrackerEvent>> trackerEventKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, TrackerEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
+        factory.setErrorHandler((thrownException, data) -> {
+            log.error("Failed to read message: '" + data + "'", thrownException);
+        });
         return factory;
     }
 
+
     @Bean
-    public ConsumerFactory<String, String> stringConsumerFactory() {
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> stringKafkaListenerContainerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -65,13 +71,11 @@ public class ReceiverConfig {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "DABBD-EVENT-LISTENER-2");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
-    }
+        DefaultKafkaConsumerFactory<String, String> consumerFactory
+                = new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
 
-    @Bean
-    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> stringKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(stringConsumerFactory());
+        factory.setConsumerFactory(consumerFactory);
         return factory;
     }
 
