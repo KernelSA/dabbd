@@ -21,7 +21,7 @@ public class DmTrackerEntity {
     private Integer speed;
     @Column(name = "Coordinates", nullable = false, columnDefinition = "point")     //NOT NULL,
     private Point coordinates;
-    //    private Double[] coordinates;
+    //     Double[] coordinates;
     @Column(name = "GsmSignal", nullable = false)       //NOT NULL,
     private Integer gsmSignal;
     @Column(name = "GpsSattelites", nullable = false)   //NOT NULL,

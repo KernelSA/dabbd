@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 public class EventsEntity {
 
     @Id
-
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "EventID", unique = true, insertable = false, updatable = false, nullable = false)           // primary key,
     private Long eventId;

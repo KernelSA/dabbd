@@ -30,13 +30,29 @@ public class Receiver {
         log.info("=> Receiver PostConstruct");
     }
 
-    @KafkaListener(topics = "${kernel.dabbd.listener.topic}")
-    public void listen(@Payload TrackerEvent message) {
+    @KafkaListener(
+            topics = "${kernel.dabbd.listener.topic}",
+            containerFactory = "trackerEventKafkaListenerContainerFactory"
+//            , groupId = "${kernel.dabbd.listener.group.id}"
+    )
+    public void listenTrackerEvent(@Payload TrackerEvent message) {
 
-        log.info("msg =>>  {}", message);
+        log.info("=>> msg TrackerEvent: {}", message);
 
-        Iterable<EventsEntity> all = eventsRepository.findAll();
-        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
+//        Iterable<EventsEntity> all = eventsRepository.findAll();
+//        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
+
+    }
+
+    @KafkaListener(
+            topics = "${kernel.dabbd.listener.topic}",
+            containerFactory = "stringKafkaListenerContainerFactory")
+    public void listenString(@Payload String message) {
+
+        log.info("=>> msg String: {}", message);
+
+//        Iterable<EventsEntity> all = eventsRepository.findAll();
+//        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
 
     }
 }

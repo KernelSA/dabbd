@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 @Data
 public class TrackerEvent {
@@ -19,7 +20,7 @@ public class TrackerEvent {
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonFormat(pattern = "dd.MM.yyyy-HH:mm:ss")
     private LocalDateTime eventDt;
-    private Double[] coordinates;
+    private ArrayList<Double> coordinates;
     private Integer speed;
     private Integer fuelLevel;
     private Integer powerLevel;
