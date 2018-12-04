@@ -113,6 +113,7 @@ public class ReceiverTest {
     @Test
     public void testSend2() throws InterruptedException {
         // send the message
+
         String plainTest = "Hello world!";
         String event = "{\n" +
                 "  \"trackerId\": \"353173060726716\",\n" +
@@ -131,8 +132,46 @@ public class ReceiverTest {
 
         sender.send(event);
         sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
+        sender.send(plainTest);
+        sender.send("");
+        sender.send(event);
 
         // check that the message was received
+        Thread.sleep(1000000);
         ConsumerRecord<String, String> received = records.poll(10, TimeUnit.SECONDS);
         // Hamcrest Matchers to check the value
         assertThat(received, hasValue(event));

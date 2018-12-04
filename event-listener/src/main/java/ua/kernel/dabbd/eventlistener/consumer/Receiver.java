@@ -37,6 +37,9 @@ public class Receiver {
         if (log.isTraceEnabled()) {
             log.trace("=>> msg TrackerEvent: {}", message);
         }
+        if (message == null) {
+            return;
+        }
         EventsEntity eventEntity = EventsEntity.builder()
                 .trackerId(message.getTrackerId())
                 .sourceType(message.getSourceType())
@@ -55,7 +58,7 @@ public class Receiver {
 
     }
 
-    @KafkaListener(
+/*    @KafkaListener(
             topics = "${kernel.dabbd.listener.topic}",
             containerFactory = "stringKafkaListenerContainerFactory")
     public void listenString(@Payload String message) {
@@ -65,5 +68,5 @@ public class Receiver {
 //        Iterable<EventsEntity> all = eventsRepository.findAll();
 //        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
 
-    }
+    }*/
 }

@@ -2,6 +2,7 @@ package ua.kernel.dabbd.eventlistener.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ import ua.kernel.dabbd.commons.model.TrackerEvent;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 @Slf4j
 @EnableKafka
@@ -34,24 +36,44 @@ public class ReceiverConfig {
         Map<String, Object> props = getCommonConsumerProperties();
 //        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 //        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer2.class);
-        props.put(ErrorHandlingDeserializer2.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
+//        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer2.class);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+//        props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, JsonDeserializer.class);
+//        props.put(JsonDeserializer.KEY_DEFAULT_TYPE, String.class.getCanonicalName());
+//        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
+//        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TrackerEvent.class.getCanonicalName());
+//        props.put(JsonDeserializer.TRUSTED_PACKAGES, "ua.kernel");
+
+//        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer2.class);
+//        props.put(ErrorHandlingDeserializer2.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer2.class);
         props.put(ErrorHandlingDeserializer2.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
-//        props.put(JsonDeserializer.KEY_DEFAULT_TYPE, "com.example.MyKey");
-//        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.example.MyValue");
+        props.put(ErrorHandlingDeserializer2.VALUE_FUNCTION, FailedTrackerEventProvider.class);
+//        props.put(ErrorHandlingDeserializer2.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
+//        props.put(JsonDeserializer.KEY_DEFAULT_TYPE, String.class.getCanonicalName());
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TrackerEvent.class.getCanonicalName());
 //        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.example");
 
-        ConsumerFactory<String, TrackerEvent> consumerFactory = new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new JsonDeserializer<>(TrackerEvent.class));
+        ConsumerFactory<String, TrackerEvent> consumerFactory = new DefaultKafkaConsumerFactory<>(props);
 
         ConcurrentKafkaListenerContainerFactory<String, TrackerEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
-        factory.setErrorHandler((thrownException, data) -> {
-            log.error("Failed to read message: '" + data + "'", thrownException);
-
-        });
+//        factory.setErrorHandler((thrownException, data) -> {
+//            log.error("Failed to read message: '" + data + "'", thrownException);
+//
+//        });
 
         return factory;
+    }
+
+    public static class FailedTrackerEventProvider implements BiFunction<byte[], Headers, TrackerEvent> {
+
+        @Override
+        public TrackerEvent apply(byte[] t, Headers u) {
+            log.error("=> Failed to deserialize msg: '{}' with headers: '{}'", new String(t), u);
+            return null;
+        }
+
     }
 
     @Bean
