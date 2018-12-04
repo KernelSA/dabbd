@@ -1,10 +1,10 @@
 package ua.kernel.dabbd.commons.entity;
 
+import com.vividsolutions.jts.geom.Point;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.geo.Point;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -18,27 +18,29 @@ public class EventsEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "EventID", unique = true, insertable = false, updatable = false, nullable = false)           // primary key,
+    @Column(name = "EventID", unique = true, insertable = false, updatable = false)           // primary key,
     private Long eventId;
     @Column(name = "TrackerID", length = 50, nullable = false)         // (50) NOT NULL,
     private String trackerId;
-    @Column(name = "SourceType", length = 50, nullable = false)        // (50) NOT NULL,
+    @Column(name = "SourceType", length = 50)        // (50) NOT NULL,
     private String sourceType;
-    @Column(name = "EventDt", nullable = false)           // without Time zone NOT NULL,
+    @Column(name = "EventDt")           // without Time zone NOT NULL,
     private LocalDateTime eventDt;
-    @Column(name = "Coordinates", nullable = false, columnDefinition = "point")       // NOT NULL,
-    private Point coordinates;
-    @Column(name = "Speed", nullable = false)             // NOT NULL,
+    @Column(name = "lat")       // NOT NULL,
+    private Double lat;
+    @Column(name = "long")
+    private Double lng;
+    @Column(name = "Speed")             // NOT NULL,
     private Integer speed;
-    @Column(name = "Fuel", nullable = false)              // NOT NULL,
+    @Column(name = "Fuel")              // NOT NULL,
     private Integer fuel;
-    @Column(name = "Power", nullable = false)             // NOT NULL,
+    @Column(name = "Power")             // NOT NULL,
     private Integer power;
-    @Column(name = "GsmSignal", nullable = false)         // NOT NULL,
+    @Column(name = "GsmSignal")         // NOT NULL,
     private Integer gsmSignal;
-    @Column(name = "GpsSattelites", nullable = false)     // NOT NULL,
+    @Column(name = "GpsSattelites")     // NOT NULL,
     private Integer gpsSatellites;
-    @Column(name = "InsDt", nullable = false)             // without Time zone NOT null DEFAULT CURRENT_TIMESTAMP
+    @Column(name = "InsDt")             // without Time zone NOT null DEFAULT CURRENT_TIMESTAMP
     private LocalDateTime insDt;
 
 
