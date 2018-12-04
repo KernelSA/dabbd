@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.geo.Point;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.repository.EventsRepository;
 
 import javax.annotation.PostConstruct;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -36,9 +39,21 @@ public class Receiver {
 //            , groupId = "${kernel.dabbd.listener.group.id}"
     )
     public void listenTrackerEvent(@Payload TrackerEvent message) {
-
-        log.info("=>> msg TrackerEvent: {}", message);
-
+        if (log.isTraceEnabled()) {
+            log.trace("=>> msg TrackerEvent: {}", message);
+        }
+        EventsEntity eventEntity = EventsEntity.builder()
+                .trackerId(message.getTrackerId())
+                .sourceType(message.getSourceType())
+                .eventDt(message.getEventDt())
+                .coordinates(new Point(message.getCoordinates().get(0), message.getCoordinates().get(1)))
+                .speed(message.getSpeed())
+                .fuel(message.getFuelLevel())
+                .power(message.getPowerLevel())
+                .gsmSignal(message.getGsmSignal())
+                .gpsSatellites(message.getSattelites())
+                .build();
+        eventsRepository.save(eventEntity);
 //        Iterable<EventsEntity> all = eventsRepository.findAll();
 //        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
 
@@ -48,9 +63,9 @@ public class Receiver {
             topics = "${kernel.dabbd.listener.topic}",
             containerFactory = "stringKafkaListenerContainerFactory")
     public void listenString(@Payload String message) {
-
-        log.info("=>> msg String: {}", message);
-
+        if (log.isTraceEnabled()) {
+            log.trace("=>> msg String: {}", message);
+        }
 //        Iterable<EventsEntity> all = eventsRepository.findAll();
 //        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
 

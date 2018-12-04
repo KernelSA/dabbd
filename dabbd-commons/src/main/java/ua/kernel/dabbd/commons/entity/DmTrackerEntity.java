@@ -1,12 +1,16 @@
 package ua.kernel.dabbd.commons.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.geo.Point;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity(name = "DM_TRACKER")
 public class DmTrackerEntity {
 

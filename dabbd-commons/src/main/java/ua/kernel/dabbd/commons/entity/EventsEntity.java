@@ -1,12 +1,18 @@
 package ua.kernel.dabbd.commons.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.geo.Point;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity(name = "EVENTS")
 public class EventsEntity {
 
@@ -32,7 +38,7 @@ public class EventsEntity {
     private Integer gsmSignal;
     @Column(name = "GpsSattelites", nullable = false)     // NOT NULL,
     private Integer gpsSatellites;
-    @Column(name = "InsDt", nullable = false)             // without Time zone NOT null default current_timestamp
+    @Column(name = "InsDt", nullable = false)             // without Time zone NOT null DEFAULT CURRENT_TIMESTAMP
     private LocalDateTime insDt;
 
 
