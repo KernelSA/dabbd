@@ -171,7 +171,7 @@ public class ReceiverTest {
         sender.send(event);
 
         // check that the message was received
-        Thread.sleep(1000000);
+        Thread.sleep(10000);
         ConsumerRecord<String, String> received = records.poll(10, TimeUnit.SECONDS);
         // Hamcrest Matchers to check the value
         assertThat(received, hasValue(event));

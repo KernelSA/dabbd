@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 import ua.kernel.dabbd.commons.entity.EventsEntity;
@@ -11,6 +12,7 @@ import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.repository.EventsRepository;
 
 import javax.annotation.PostConstruct;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -33,24 +35,26 @@ public class Receiver {
             containerFactory = "trackerEventKafkaListenerContainerFactory"
 //            , groupId = "${kernel.dabbd.listener.group.id}"
     )
-    public void listenTrackerEvent(@Payload TrackerEvent message) {
+    public void listenTrackerEvent(@Payload TrackerEvent message, @Headers Map<String,Object> headers) {
         if (log.isTraceEnabled()) {
-            log.trace("=>> msg TrackerEvent: {}", message);
+            log.trace("=>> msg TrackerEvent: {}, with headers: '{}'", message, headers);
         }
         if (message == null) {
             return;
         }
+//        Object kafka_receivedTimestamp = headers.get("kafka_receivedTimestamp");
         EventsEntity eventEntity = EventsEntity.builder()
                 .trackerId(message.getTrackerId())
                 .sourceType(message.getSourceType())
                 .eventDt(message.getEventDt())
-                .lat(message.getCoordinates().get(0))
-                .lng(message.getCoordinates().get(1))
+                .latitude(message.getCoordinates().get(0))
+                .longitude(message.getCoordinates().get(1))
                 .speed(message.getSpeed())
                 .fuel(message.getFuelLevel())
                 .power(message.getPowerLevel())
                 .gsmSignal(message.getGsmSignal())
                 .gpsSatellites(message.getSattelites())
+//                .kafkaTimestamp(kafka_receivedTimestamp)
                 .build();
         eventsRepository.save(eventEntity);
 //        Iterable<EventsEntity> all = eventsRepository.findAll();

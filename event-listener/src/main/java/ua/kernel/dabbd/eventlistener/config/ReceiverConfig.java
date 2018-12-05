@@ -34,25 +34,14 @@ public class ReceiverConfig {
     @Bean
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, TrackerEvent>> trackerEventKafkaListenerContainerFactory() {
         Map<String, Object> props = getCommonConsumerProperties();
-//        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-//        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-//        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer2.class);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-//        props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, JsonDeserializer.class);
-//        props.put(JsonDeserializer.KEY_DEFAULT_TYPE, String.class.getCanonicalName());
-//        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
-//        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TrackerEvent.class.getCanonicalName());
-//        props.put(JsonDeserializer.TRUSTED_PACKAGES, "ua.kernel");
 
-//        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer2.class);
-//        props.put(ErrorHandlingDeserializer2.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer2.class);
         props.put(ErrorHandlingDeserializer2.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
         props.put(ErrorHandlingDeserializer2.VALUE_FUNCTION, FailedTrackerEventProvider.class);
-//        props.put(ErrorHandlingDeserializer2.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
-//        props.put(JsonDeserializer.KEY_DEFAULT_TYPE, String.class.getCanonicalName());
+
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TrackerEvent.class.getCanonicalName());
-//        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.example");
 
         ConsumerFactory<String, TrackerEvent> consumerFactory = new DefaultKafkaConsumerFactory<>(props);
 
@@ -70,7 +59,7 @@ public class ReceiverConfig {
 
         @Override
         public TrackerEvent apply(byte[] t, Headers u) {
-            log.error("=> Failed to deserialize msg: '{}' with headers: '{}'", new String(t), u);
+            log.error("=> Failed to deserialize msg: '{}'", new String(t));
             return null;
         }
 
