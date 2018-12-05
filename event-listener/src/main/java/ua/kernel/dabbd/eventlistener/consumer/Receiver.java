@@ -12,7 +12,10 @@ import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.repository.EventsRepository;
 
 import javax.annotation.PostConstruct;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.TimeZone;
 
 @Slf4j
 @Service
@@ -21,28 +24,28 @@ public class Receiver {
 
     private final EventsRepository eventsRepository;
 
-    static {
-        System.out.println("=>>> Receiver");
-    }
-
     @PostConstruct
     public void init() {
-        log.info("=> Receiver PostConstruct");
+        log.info("=> Receiver init");
     }
 
-    @KafkaListener(
-            topics = "${kernel.dabbd.listener.topic}",
-            containerFactory = "trackerEventKafkaListenerContainerFactory"
-//            , groupId = "${kernel.dabbd.listener.group.id}"
-    )
-    public void listenTrackerEvent(@Payload TrackerEvent message, @Headers Map<String,Object> headers) {
+    @KafkaListener(topics = "${kernel.dabbd.listener.topic}", containerFactory = "trackerEventKafkaListenerContainerFactory")
+    public void listenTrackerEvent(@Payload TrackerEvent message, @Headers Map<String, Object> headers) {
         if (log.isTraceEnabled()) {
             log.trace("=>> msg TrackerEvent: {}, with headers: '{}'", message, headers);
         }
         if (message == null) {
             return;
         }
-//        Object kafka_receivedTimestamp = headers.get("kafka_receivedTimestamp");
+        LocalDateTime kafkaReceivedDt = null;
+        try {
+            kafkaReceivedDt = LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli((Long) headers.get("kafka_receivedTimestamp")),
+                    TimeZone.getDefault().toZoneId());
+        } catch (Exception e) {
+            log.warn("Can't parse DateTime from 'kafka_receivedTimestamp' header", e);
+        }
+
         EventsEntity eventEntity = EventsEntity.builder()
                 .trackerId(message.getTrackerId())
                 .sourceType(message.getSourceType())
@@ -54,7 +57,7 @@ public class Receiver {
                 .power(message.getPowerLevel())
                 .gsmSignal(message.getGsmSignal())
                 .gpsSatellites(message.getSattelites())
-//                .kafkaTimestamp(kafka_receivedTimestamp)
+                .kafkaTimestamp(kafkaReceivedDt)
                 .build();
         eventsRepository.save(eventEntity);
 //        Iterable<EventsEntity> all = eventsRepository.findAll();

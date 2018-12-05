@@ -56,13 +56,13 @@ public class ReceiverConfig {
     }
 
     public static class FailedTrackerEventProvider implements BiFunction<byte[], Headers, TrackerEvent> {
+        private long failedCounter = 0L;
 
         @Override
         public TrackerEvent apply(byte[] t, Headers u) {
-            log.error("=> Failed to deserialize msg: '{}'", new String(t));
+            log.warn("=> Failed to deserialize msg: '{}',\ttotal count: {}", new String(t), ++failedCounter);
             return null;
         }
-
     }
 
     @Bean
