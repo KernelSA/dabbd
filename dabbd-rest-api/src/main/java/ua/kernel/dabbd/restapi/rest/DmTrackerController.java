@@ -16,19 +16,19 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
-@RestController("/api/tracker")
+@RestController
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class DmTrackerController {
 
     private final TrackerDataService trackerDataService;
 
-    @RequestMapping(name = "/all", method = RequestMethod.GET)
+    @RequestMapping(value = "/api/tracker/all", method = RequestMethod.GET)
     public List<DmTrackerEntity> allTrackersInfo() {
         log.debug("REST Endpoint /api/tracker/all called");
         return trackerDataService.getAllTrackersView();
     }
 
-    @RequestMapping(name = "/{trackerId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/api/tracker/{trackerId}", method = RequestMethod.GET)
     public Optional<DmTrackerEntity> trackerInfo(@PathVariable String trackerId) {
         log.debug("REST Endpoint /api/tracker/{} called", trackerId);
         return trackerDataService.getTrackerInfo(trackerId);
