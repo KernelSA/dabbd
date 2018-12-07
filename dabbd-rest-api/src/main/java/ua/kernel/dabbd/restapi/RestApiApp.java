@@ -4,8 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
+import ua.kernel.dabbd.commons.config.RepositoryConfig;
+
+import static ua.kernel.dabbd.commons.util.DabBdUtils.logSystemProperties;
 
 @Slf4j
+@Import({RepositoryConfig.class})
 @SpringBootApplication
 public class RestApiApp {
 
@@ -16,14 +21,5 @@ public class RestApiApp {
         app.run(args);
     }
 
-
-    private static void logSystemProperties() {
-        log.info("------------------------------------------");
-        log.info("System Properties: ");
-        System.getProperties().entrySet()
-                .forEach(objectObjectEntry ->
-                        log.info(">>>>\t" + objectObjectEntry.getKey() + " : " + objectObjectEntry.getValue()));
-        log.info("------------------------------------------");
-    }
 
 }
