@@ -37,7 +37,7 @@ public class DmTrackerController {
     }
 
     @RequestMapping(value = "/api/tracker/{trackerId}/history", method = RequestMethod.GET)
-    public FeatureCollection trackerHistory(String trackerId) {
+    public FeatureCollection trackerHistory(@PathVariable String trackerId) {
         log.debug("REST Endpoint /api/tracker/{}/history called", trackerId);
         return trackerHistoryService.getTrack(trackerId);
     }

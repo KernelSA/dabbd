@@ -10,7 +10,7 @@ import ua.kernel.dabbd.commons.entity.EventsEntity;
 @Builder
 public class Feature {
     @Getter
-    private String type = "Feature";
+    private final String type = "Feature";
     private Geometry geometry;
     private EventsEntity properties;
 
