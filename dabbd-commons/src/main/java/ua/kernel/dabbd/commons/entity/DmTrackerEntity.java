@@ -29,9 +29,9 @@ public class DmTrackerEntity {
     @Column(name = "Longitude")
     private Double longitude;
     @Column(name = "GSM_Signal")
-    private Integer gsmSignal;
+    private Short gsmSignal;
     @Column(name = "GPS_Satellites")
-    private Integer gpsSatellites;
+    private Short gpsSatellites;
     @Column(name = "Online")
     private Boolean online;
     @Column(name = "Last_event_dt")          //without Time zone,

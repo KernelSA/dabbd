@@ -17,7 +17,6 @@ import java.util.Optional;
 public class TrackerDataService {
 
     private final DmTrackerRepository dmTrackerRepository;
-    private final EventsRepository eventsRepository;
 
     public List<DmTrackerEntity> getAllTrackersView() {
         return dmTrackerRepository.findAll();

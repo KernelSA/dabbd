@@ -36,9 +36,9 @@ public class EventsEntity {
     @Column(name = "power")
     private Integer power;
     @Column(name = "gsm_signal")
-    private Integer gsmSignal;
+    private Short gsmSignal;
     @Column(name = "gps_satellites")
-    private Integer gpsSatellites;
+    private Short gpsSatellites;
     @Column(name = "ins_dt", insertable = false, updatable = false)             // without Time zone NOT null DEFAULT CURRENT_TIMESTAMP
     private LocalDateTime insDt;
     @Column(name = "profile_updated")
