@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +32,9 @@ public class ReceiverConfig {
     @Value("${spring.kafka.consumer.group-id}")
     private String consumerGroupId;
 
+    @Autowired
+    private EventListenerConfig config;
+
     @Bean
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, TrackerEvent>> trackerEventKafkaListenerContainerFactory() {
         Map<String, Object> props = getCommonConsumerProperties();
@@ -46,6 +50,7 @@ public class ReceiverConfig {
         ConsumerFactory<String, TrackerEvent> consumerFactory = new DefaultKafkaConsumerFactory<>(props);
 
         ConcurrentKafkaListenerContainerFactory<String, TrackerEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConcurrency(config.getConcurrency());
         factory.setConsumerFactory(consumerFactory);
 //        factory.setErrorHandler((thrownException, data) -> {
 //            log.error("Failed to read message: '" + data + "'", thrownException);

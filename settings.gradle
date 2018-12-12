@@ -1,5 +1,6 @@
 rootProject.name = 'dabbd'
 include 'dabbd-commons'
 include 'event-listener'
-include 'dabbd-rest-api' 
+include 'dabbd-rest-api'
+include 'dabbd-db-load-test'
 
