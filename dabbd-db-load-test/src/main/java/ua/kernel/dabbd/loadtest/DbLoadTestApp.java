@@ -46,21 +46,22 @@ public class DbLoadTestApp {
         Integer threads = 3;
         if (ARGS != null && ARGS.length > 0) {
             numberToGenerate = Integer.valueOf(ARGS[0]);
-            if (ARGS.length > 2) {
+            if (ARGS.length > 1) {
                 threads = Integer.valueOf(ARGS[1]);
             }
 
         }
 
         log.info("Going to insert {} events in {} threads to DB", numberToGenerate, threads);
-        LocalDateTime start = LocalDateTime.now();
+
 
         int number = numberToGenerate;
 
         for (int i = 0; i < threads; i++) {
             int threadNum = i;
-            new Thread(() -> {
+            Thread thread = new Thread(() -> {
                 log.info("Thread {} started", threadNum);
+                LocalDateTime start = LocalDateTime.now();
                 for (int j = 0; j < number; j++) {
                     eventsRepository.save(EventsTestEntity.builder()
                             .trackerId(UUID.randomUUID().toString())
@@ -68,17 +69,17 @@ public class DbLoadTestApp {
                             .speed(1)
                             .fuel(1)
                             .power(1)
-                            .latitude(34.12)
+                            .latitude(134.12)
                             .longitude(12.34)
                             .build());
                 }
 
                 log.info("Thread {} completed", threadNum);
-            }).start();
-
+                LocalDateTime end = LocalDateTime.now();
+                log.info("{} events inserted in {}", number, Duration.between(start, end).toString());
+            });
+            thread.start();
         }
-        LocalDateTime end = LocalDateTime.now();
-        log.info("{} events inserted in {}", Duration.between(start, end).toString());
     }
 
 
