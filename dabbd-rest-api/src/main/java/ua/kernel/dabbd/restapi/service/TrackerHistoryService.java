@@ -31,7 +31,7 @@ public class TrackerHistoryService {
 //        List<EventsEntity> allByTrackerId = eventsRepository.findAllByTrackerId(trackerId);
         LocalDateTime today = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
         List<EventsEntity> allByTrackerId
-                = eventsRepository.findByTrackerIdAndEveAndEventDtGreaterThan(trackerId, today);
+                = eventsRepository.findByTrackerIdAndEventDtGreaterThan(trackerId, today);
 
         log.info("=> Found {} records for tracker {} for date {}", allByTrackerId.size(), trackerId, today);
 
