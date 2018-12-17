@@ -11,6 +11,8 @@ import ua.kernel.dabbd.commons.model.Feature;
 import ua.kernel.dabbd.commons.model.FeatureCollection;
 import ua.kernel.dabbd.commons.repository.EventsRepository;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,8 +27,14 @@ public class TrackerHistoryService {
     private final EventsRepository eventsRepository;
 
     public FeatureCollection getTrack(String trackerId) {
-        log.debug("=> Going to prepare tracker history for tracker '{}'", trackerId);
-        List<EventsEntity> allByTrackerId = eventsRepository.findAllByTrackerId(trackerId);
+        log.info("=> Going to prepare tracker history for tracker '{}'", trackerId);
+//        List<EventsEntity> allByTrackerId = eventsRepository.findAllByTrackerId(trackerId);
+        LocalDateTime today = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS);
+        List<EventsEntity> allByTrackerId
+                = eventsRepository.findByTrackerIdAndEventDtGreaterThan(trackerId, today);
+
+        log.info("=> Found {} records for tracker {} for date {}", allByTrackerId.size(), trackerId, today);
+
         List<Feature> collect = allByTrackerId.stream().sorted(Comparator.comparing(EventsEntity::getEventDt))
                 .map(eventsEntity ->
                         Feature.builder()
@@ -35,7 +43,9 @@ public class TrackerHistoryService {
                                         .createPoint(new Coordinate(eventsEntity.getLatitude(), eventsEntity.getLongitude())))
                                 .build())
                 .collect(Collectors.toList());
+
         log.trace("=> History track for tracker '{}' => {}", trackerId, collect);
+
         return FeatureCollection.builder().features(collect).build();
     }
 
