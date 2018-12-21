@@ -14,6 +14,7 @@ import ua.kernel.dabbd.commons.serde.JacksonDeserializationSchema;
 import ua.kernel.dabbd.commons.serde.JacksonSerializationSchema;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -49,19 +50,12 @@ public class WialonTopicTriggers {
 //
 //        stream.filter(value -> value.getSpeed() != null).countWindowAll(200).max("speed").print("max speed >>> ");
 
-        SingleOutputStreamOperator<EventTrigger> process = stream.keyBy(TrackerEvent::getTrackerId).countWindow(2).process(new ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow>() {
 
-            @Override
-            public void process(String key, Context context, Iterable<TrackerEvent> elements, Collector<EventTrigger> out) throws Exception {
-                EventTrigger eventTrigger = new EventTrigger();
-                eventTrigger.setTriggerDt(LocalDateTime.now());
-                eventTrigger.setTrackerId(key);
-                elements.forEach(trackerEvent -> {
-                    eventTrigger.setTriggerType(eventTrigger.getTriggerType() + ", " + trackerEvent.getFuelLevel());
-                });
-                out.collect(eventTrigger);
-            }
-        });
+        SingleOutputStreamOperator<EventTrigger> process = stream
+                .keyBy(TrackerEvent::getTrackerId)
+                .countWindow(2)
+                .process(processWindowFunction());
+
         process.addSink(kafkaProducer);
         process.print("trigger >>>");
 
@@ -69,5 +63,38 @@ public class WialonTopicTriggers {
 
     }
 
+    private static ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> processWindowFunction() {
+        return new ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow>() {
 
+            @Override
+            public void process(String key, Context context, Iterable<TrackerEvent> elements, Collector<EventTrigger> out) {
+                EventTrigger eventTrigger = new EventTrigger();
+                eventTrigger.setTrackerId(key);
+                eventTrigger.setTriggerDt(LocalDateTime.now());
+
+                int count = 0;
+                ArrayList<Integer> fuelLevels = new ArrayList<>();
+                ArrayList<Integer> getPowerLevel = new ArrayList<>();
+                ArrayList<Integer> getSpeed = new ArrayList<>();
+                StringBuilder eventDates = new StringBuilder("eventDates: ");
+
+                for (TrackerEvent event : elements) {
+                    count++;
+                    fuelLevels.add(event.getFuelLevel());
+                    getPowerLevel.add(event.getPowerLevel());
+                    getSpeed.add(event.getSpeed());
+                    eventDates.append(event.getEventDt()).append(", ");
+
+                }
+
+                eventTrigger.setTriggerType("Count of elements: " + count + eventDates.toString()
+                        + ", fuelLevels: " + fuelLevels.toString()
+                        + ", getPowerLevel: " + getPowerLevel.toString()
+                        + ", getSpeed: " + getSpeed.toString()
+                );
+                eventTrigger.setTriggerId("TEST-"+ UUID.randomUUID().toString());
+                out.collect(eventTrigger);
+            }
+        };
+    }
 }
