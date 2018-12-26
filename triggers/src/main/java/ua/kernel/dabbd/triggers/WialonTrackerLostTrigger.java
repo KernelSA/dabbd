@@ -52,7 +52,7 @@ public class WialonTrackerLostTrigger {
 
         String groupId = parameterTool.get("group.id", "test-group-" + UUID.randomUUID().toString());
         String bootstrapServers = parameterTool.get("bootstrap.servers", DEFAULT_BROKKERS);
-        String autoOffsetReset = parameterTool.get("auto.offset.reset", "earliest");
+        String autoOffsetReset = parameterTool.get("auto.offset.reset", "latest");
 
         Properties properties = new Properties();
         properties.setProperty("bootstrap.servers", bootstrapServers);
@@ -65,6 +65,7 @@ public class WialonTrackerLostTrigger {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         FlinkKafkaConsumer<TrackerEvent> trackerEventsKafkaSource = new FlinkKafkaConsumer<>(trackersTopic, new JacksonDeserializationSchema<>(TrackerEvent.class), properties);
+        if (autoOffsetReset.equals("latest")) trackerEventsKafkaSource.setStartFromLatest();
 
         FlinkKafkaProducer<EventTrigger> kafkaProducer = new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties);
         kafkaProducer.setWriteTimestampToKafka(true);

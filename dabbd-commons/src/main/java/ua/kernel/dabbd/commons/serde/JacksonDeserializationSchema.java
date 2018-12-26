@@ -20,6 +20,9 @@ public class JacksonDeserializationSchema<T> implements DeserializationSchema<T>
 
     @Override
     public T deserialize(byte[] message) throws IOException {
+        if (message == null || message.length < 2) {
+            return null;
+        }
         if (mapper == null) {
             mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         }
