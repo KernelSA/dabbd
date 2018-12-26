@@ -1,3 +1,5 @@
+package ua.kernel.dabbd.triggers;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -25,7 +27,7 @@ public class WialonTopicTriggers {
     public static final StreamExecutionEnvironment ENV = StreamExecutionEnvironment.getExecutionEnvironment();
 
     public static void main(String[] args) throws Exception {
-        log.info("> WialonTopicTriggers >>>>>>>");
+        log.info("> ua.kernel.dabbd.triggers.WialonTopicTriggers >>>>>>>");
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         Properties properties = new Properties();
         properties.setProperty("bootstrap.servers", "ks-dmp-dev14.kyivstar.ua:6667,ks-dmp-dev15.kyivstar.ua:6667");
@@ -53,7 +55,9 @@ public class WialonTopicTriggers {
 
         SingleOutputStreamOperator<EventTrigger> process = stream
                 .keyBy(TrackerEvent::getTrackerId)
+//                .assignTimestampsAndWatermarks()
                 .countWindow(2)
+//                .trigger()
                 .process(processWindowFunction());
 
         process.addSink(kafkaProducer);
@@ -87,7 +91,7 @@ public class WialonTopicTriggers {
 
                 }
 
-                eventTrigger.setTriggerType("Count of elements: " + count + eventDates.toString()
+                eventTrigger.setTriggerInfo("Count of elements: " + count + eventDates.toString()
                         + ", fuelLevels: " + fuelLevels.toString()
                         + ", getPowerLevel: " + getPowerLevel.toString()
                         + ", getSpeed: " + getSpeed.toString()

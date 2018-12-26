@@ -1,5 +1,5 @@
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compileOnly 'org.springframework.boot:spring-boot-starter-data-jpa'
 
 //    implementation group: 'org.hibernatespatial', name: 'hibernate-spatial-postgis', version: '1.1'
     implementation group: 'org.hibernate', name: 'hibernate-spatial', version: '5.3.7.Final'

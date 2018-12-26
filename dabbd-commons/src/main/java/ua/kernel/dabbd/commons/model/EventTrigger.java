@@ -16,7 +16,8 @@ public class EventTrigger {
     private String trackerId;
 
     private String triggerId;
-    private String triggerType;
+    private TriggerType triggerType;
+    private String triggerInfo;
 
 
     @JsonSerialize(using = LocalDateTimeSerializer.class)
@@ -27,5 +28,5 @@ public class EventTrigger {
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonFormat(pattern = "dd.MM.yyyy-HH:mm:ss")
-    private LocalDateTime eventDt;
+    private LocalDateTime eventDt; //?? last  Event DT caused the trigger event
 }

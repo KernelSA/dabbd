@@ -1,5 +1,6 @@
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
@@ -12,6 +13,7 @@ import java.util.Properties;
 import java.util.UUID;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 @Slf4j
 public class FlinkTestApp {
@@ -49,31 +51,50 @@ public class FlinkTestApp {
         kafkaProducer.setWriteTimestampToKafka(true);
         System.out.println("kafkaProducer " + kafkaProducer.toString());
 
-        List<TrackerEvent> msgs = new ArrayList<>();
-        try {
-            for (int j = 0; j < 12; j++) {
-                for (int i = 0; i < 1000; i++) {
-//                msgs.add("test-message-" + i);
-                    TrackerEvent e = new TrackerEvent();
-                    LocalDateTime now = LocalDateTime.now().plus(i, MINUTES);
-                    e.setEventDt(now);
-                    e.setTrackerId("Tracker-" + j);
-                    e.setFuelLevel(j * now.getNano());
-                    e.setPowerLevel(j + now.getMinute());
-                    e.setSpeed(j + now.getHour());
-                    msgs.add(e);
-                    System.out.println(". " + e);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        List<TrackerEvent> msgs = new ArrayList<>();
+//        try {
+//            for (int j = 0; j < 12; j++) {
+//                for (int i = 0; i < 1000; i++) {
+////                msgs.add("test-message-" + i);
+//                    TrackerEvent e = new TrackerEvent();
+//                    LocalDateTime now = LocalDateTime.now().plus(i, SECONDS);
+//                    e.setEventDt(now);
+//                    e.setTrackerId("Tracker-" + j);
+//                    e.setFuelLevel(j * now.getMinute());
+//                    e.setPowerLevel(j + now.getMinute());
+//                    e.setSpeed(j + now.getHour());
+//                    msgs.add(e);
+//                    System.out.println(". " + e);
+//                }
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+        DataStreamSource<Long> longDataStreamSource = ENV.generateSequence(0L, 20L);
 
-        DataStreamSource<TrackerEvent> stringDataStreamSource = ENV.fromCollection(msgs);
-        stringDataStreamSource.addSink(kafkaProducer);
-        stringDataStreamSource.print();
+        SingleOutputStreamOperator<TrackerEvent> trackerEventsStream = longDataStreamSource
+                .map(FlinkTestApp::getTrackerEvent);
+//        DataStreamSource<TrackerEvent> stringDataStreamSource = ENV.generateSequence(0L,10_000L);
+        trackerEventsStream.addSink(kafkaProducer);
+        trackerEventsStream.print();
         ENV.execute();
 
+    }
+
+    private static TrackerEvent getTrackerEvent(Long id) throws InterruptedException {
+        Thread.sleep(id * 2 * 1000);
+        TrackerEvent e = new TrackerEvent();
+        LocalDateTime dt = LocalDateTime.now().plus(id * 10, SECONDS);
+
+        e.setEventDt(dt);
+        e.setTrackerId("Tracker-LOST_SIGNAL-2");
+        e.setSourceType("seq_num-" + id);
+        e.setFuelLevel(dt.getSecond());
+        e.setPowerLevel(dt.getMinute());
+        e.setSpeed(dt.getHour());
+
+        System.out.println("[" + LocalDateTime.now() + "]--> emmit:" + e);
+        return e;
     }
 
 }
