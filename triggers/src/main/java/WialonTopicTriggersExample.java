@@ -1,5 +1,3 @@
-package ua.kernel.dabbd.triggers;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -21,13 +19,13 @@ import java.util.Properties;
 import java.util.UUID;
 
 @Slf4j
-public class WialonTopicTriggers {
+public class WialonTopicTriggersExample {
 
     public static final String TOPIC = "json-topic";
     public static final StreamExecutionEnvironment ENV = StreamExecutionEnvironment.getExecutionEnvironment();
 
     public static void main(String[] args) throws Exception {
-        log.info("> ua.kernel.dabbd.triggers.WialonTopicTriggers >>>>>>>");
+        log.info("> WialonTopicTriggersExample >>>>>>>");
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         Properties properties = new Properties();
         properties.setProperty("bootstrap.servers", "ks-dmp-dev14.kyivstar.ua:6667,ks-dmp-dev15.kyivstar.ua:6667");
