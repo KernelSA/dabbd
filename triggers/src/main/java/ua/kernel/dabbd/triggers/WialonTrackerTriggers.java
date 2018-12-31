@@ -47,6 +47,7 @@ public class WialonTrackerTriggers {
     private static final long DEFAULT_DATA_GAP_TIMEGAP_SECONDS = 3 * 60;
     private static final int DEFAULT_DATA_GAP_DISTANCE_METERS = 500;
     private static final int DEFAULT_DATA_GAP_SPEED_KMH = 10;
+    public static final int DEFAULT_FUEL_LEVEL_SPIKE = 10;
 
 
     public static void main(String[] args) throws Exception {
@@ -107,6 +108,14 @@ public class WialonTrackerTriggers {
                 .process(processDataGap(dataGapTimegapSeconds, dataGapDistanceMeters, dataGapSpeedKmh));
         processedDataGap.addSink(kafkaProducer);
         processedDataGap.print("\nTRACKER_DATA_GAP >>>");
+
+
+        SingleOutputStreamOperator<EventTrigger> processedFuelLevel = streamByTrackerId
+                .countWindow(6)
+                .process(processFuelLevel());
+        processedFuelLevel.addSink(kafkaProducer);
+        processedFuelLevel.print("\nFUEL_LEVEL_JUMP >>>");
+
 
         SingleOutputStreamOperator<EventTrigger> processPowerLost = streamByTrackerId.process(new KeyedProcessFunction<String, TrackerEvent, EventTrigger>() {
             @Override
@@ -210,4 +219,52 @@ public class WialonTrackerTriggers {
             }
         };
     }
+
+    private static ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> processFuelLevel() {
+        return new ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow>() {
+
+            @Override
+            public void process(String key, Context context, Iterable<TrackerEvent> elements, Collector<EventTrigger> out) {
+
+                List<TrackerEvent> events = new ArrayList<>();
+                elements.forEach(events::add);
+
+                if (events.size() != 6) {
+                    log.warn("For data-gap trigger window should contain 2 elements");
+                    return;
+                }
+
+                TrackerEvent trackerEvent1 = events.get(0);
+                Integer fuelLevel1 = trackerEvent1.getFuelLevel();
+                int fuelBaseLevel = fuelLevel1 > 0 ? fuelLevel1 : 1;
+                ArrayList<Integer> agg = new ArrayList<>();
+                for (int i = 1; i < 6; i++) {
+                    TrackerEvent trackerEvent = events.get(i);
+                    Integer fuelLevelN = trackerEvent.getFuelLevel();
+                    int diff = fuelLevel1 - fuelLevelN;
+                    agg.add(((Math.abs(diff / fuelBaseLevel)) * 100 < DEFAULT_FUEL_LEVEL_SPIKE) ? 0 : Integer.signum(diff));
+                }
+
+                if (agg.stream().anyMatch(d -> d == 0)) {
+                    // not all 5 levels had a diff > N% -> not match trigger definition
+                    return;
+                }
+                if (Math.abs(agg.stream().mapToInt(value -> value).sum()) != 5) {
+                    // there was + and - spikes ing fuel level -> not match trigger definition
+                    return;
+                }
+
+                EventTrigger eventTrigger = new EventTrigger();
+                eventTrigger.setTrackerId(key);
+                eventTrigger.setTriggerDt(LocalDateTime.now());
+                eventTrigger.setTriggerInfo("");
+                eventTrigger.setTriggerType(FUEL_LEVEL_JUMP);
+                eventTrigger.setEventDt(trackerEvent1.getEventDt());
+
+                out.collect(eventTrigger);
+
+            }
+        };
+    }
+
 }
