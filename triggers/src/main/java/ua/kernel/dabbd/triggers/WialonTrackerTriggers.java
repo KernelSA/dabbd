@@ -186,7 +186,7 @@ public class WialonTrackerTriggers {
                 }
 
                 TrackerEvent trackerEvent1 = events.get(0);
-                TrackerEvent trackerEvent2 = events.get(2);
+                TrackerEvent trackerEvent2 = events.get(1);
 
                 Duration duration = Duration.between(trackerEvent1.getEventDt(), trackerEvent2.getEventDt());
                 if (duration.getSeconds() < timeGap)

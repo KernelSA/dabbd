@@ -9,6 +9,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.UUID;
 
 @Data
 public class EventTrigger {
@@ -19,7 +20,6 @@ public class EventTrigger {
     private TriggerType triggerType;
     private String triggerInfo;
 
-
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonFormat(pattern = "dd.MM.yyyy-HH:mm:ss")
@@ -29,4 +29,8 @@ public class EventTrigger {
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonFormat(pattern = "dd.MM.yyyy-HH:mm:ss")
     private LocalDateTime eventDt; //?? last  Event DT caused the trigger event
+
+    public EventTrigger() {
+        this.triggerId = UUID.randomUUID().toString();
+    }
 }
