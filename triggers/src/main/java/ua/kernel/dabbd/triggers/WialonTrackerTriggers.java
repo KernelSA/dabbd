@@ -74,8 +74,6 @@ public class WialonTrackerTriggers {
         FlinkKafkaConsumer<TrackerEvent> trackerEventsKafkaSource = new FlinkKafkaConsumer<>(trackersTopic, new JacksonDeserializationSchema<>(TrackerEvent.class), properties);
         if (autoOffsetReset.equals("latest")) trackerEventsKafkaSource.setStartFromLatest();
 
-        FlinkKafkaProducer<EventTrigger> kafkaProducer = new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties);
-
         int lostTrackerTimeoutSeconds = parameterTool.getInt("lost.tracker.timeout.seconds", LOST_TRACKER_TIMEOUT_SECONDS);
         DataStream<TrackerEvent> stream = env
                 .addSource(trackerEventsKafkaSource)
@@ -95,7 +93,7 @@ public class WialonTrackerTriggers {
                 .countWindow(1)//ignored due to specified time trigger below
                 .trigger(processTimeLostTrackerTrigger(lostTrackerTimeoutSeconds))
                 .process(processWindowFunction());
-        process.addSink(kafkaProducer);
+        process.addSink(new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties));
         process.print("\nSIGNAL_LOST >>>");
 
 
@@ -106,14 +104,14 @@ public class WialonTrackerTriggers {
         SingleOutputStreamOperator<EventTrigger> processedDataGap = streamByTrackerId
                 .countWindow(2)
                 .process(processDataGap(dataGapTimegapSeconds, dataGapDistanceMeters, dataGapSpeedKmh));
-        processedDataGap.addSink(kafkaProducer);
+        processedDataGap.addSink(new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties));
         processedDataGap.print("\nTRACKER_DATA_GAP >>>");
 
 
         SingleOutputStreamOperator<EventTrigger> processedFuelLevel = streamByTrackerId
                 .countWindow(6)
                 .process(processFuelLevel());
-        processedFuelLevel.addSink(kafkaProducer);
+        processedFuelLevel.addSink(new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties));
         processedFuelLevel.print("\nFUEL_LEVEL_JUMP >>>");
 
 
@@ -132,7 +130,7 @@ public class WialonTrackerTriggers {
                 }
             }
         });
-        processPowerLost.addSink(kafkaProducer);
+        processPowerLost.addSink(new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties));
         processPowerLost.print("\nPOWER_LOST >>>");
 
         env.execute();
