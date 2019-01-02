@@ -123,7 +123,7 @@ public class WialonTrackerTriggers {
         return new BoundedOutOfOrdernessTimestampExtractor<TrackerEvent>(Time.seconds(lostTrackerTimeoutSeconds)) {
             @Override
             public long extractTimestamp(TrackerEvent element) {
-                return element.getEventDt().toEpochSecond(OFFSET);
+                return element.getEventDt().toInstant(OFFSET).toEpochMilli();
             }
         };
     }

@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static ua.kernel.dabbd.commons.model.TriggerType.SIGNAL_LOST;
@@ -46,12 +45,13 @@ public class ProcessSignalLost extends ProcessWindowFunction<TrackerEvent, Event
         if (events.size() <= 1) {
             LocalDateTime eventDt = events.get(0).getEventDt();
             LocalDateTime processingDt = LocalDateTime.now();
-            if (eventDt.minusSeconds(lostTrackerTimeoutSeconds)
-                    .isBefore(processingDt)) {
+
+            if (eventDt.isBefore(processingDt.minusSeconds(lostTrackerTimeoutSeconds))) {
 
                 EventTrigger eventTrigger = new EventTrigger();
                 eventTrigger.setTrackerId(key);
                 eventTrigger.setTriggerDt(processingDt);
+
                 String contextInfo = ", context: ";
                 if (context != null) {
                     LocalDateTime contextProcessingDt = LocalDateTime.ofInstant(Instant.ofEpochMilli(context.currentProcessingTime()), OFFSET);
@@ -60,7 +60,7 @@ public class ProcessSignalLost extends ProcessWindowFunction<TrackerEvent, Event
                 }
                 LocalDateTime assignerCurrentWatermarkDt = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestampAndWatermarkAssigner.getCurrentWatermark().getTimestamp()), OFFSET);
                 eventTrigger.setTriggerInfo("EventDt: " + eventDt
-                        + ", processingDt: " + processingDt+ contextInfo
+                        + ", processingDt: " + processingDt + contextInfo
                         + ", timestampFromAssigner: " + assignerCurrentWatermarkDt);
                 eventTrigger.setTriggerEvents(events);
                 eventTrigger.setTriggerType(SIGNAL_LOST);
