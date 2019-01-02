@@ -22,15 +22,16 @@ import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.serde.JacksonDeserializationSchema;
 import ua.kernel.dabbd.commons.serde.JacksonSerializationSchema;
 import ua.kernel.dabbd.commons.util.DabBdUtils;
+import ua.kernel.dabbd.triggers.functions.ProcessDataGap;
+import ua.kernel.dabbd.triggers.functions.ProcessFuelLevel;
+import ua.kernel.dabbd.triggers.functions.ProcessPowerLost;
+import ua.kernel.dabbd.triggers.functions.ProcessSignalLost;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 
 import static ua.kernel.dabbd.commons.model.TriggerType.*;
 
@@ -47,7 +48,8 @@ public class WialonTrackerTriggers {
     private static final long DEFAULT_DATA_GAP_TIMEGAP_SECONDS = 3 * 60;
     private static final int DEFAULT_DATA_GAP_DISTANCE_METERS = 500;
     private static final int DEFAULT_DATA_GAP_SPEED_KMH = 10;
-    public static final int DEFAULT_FUEL_LEVEL_SPIKE = 10;
+    private static final int LOST_SIGNAL_EVALUATION_PERIOD_SECONDS = 60;
+    private static final int DEFAULT_FUEL_LEVEL_SPIKE = 10;
 
 
     public static void main(String[] args) throws Exception {
@@ -75,26 +77,20 @@ public class WialonTrackerTriggers {
         if (autoOffsetReset.equals("latest")) trackerEventsKafkaSource.setStartFromLatest();
 
         int lostTrackerTimeoutSeconds = parameterTool.getInt("lost.tracker.timeout.seconds", LOST_TRACKER_TIMEOUT_SECONDS);
+        BoundedOutOfOrdernessTimestampExtractor<TrackerEvent> timestampAndWatermarkAssigner = getTimestampAndWatermarkAssigner(lostTrackerTimeoutSeconds);
+
         DataStream<TrackerEvent> stream = env
                 .addSource(trackerEventsKafkaSource)
-                .assignTimestampsAndWatermarks(
-                        new BoundedOutOfOrdernessTimestampExtractor<TrackerEvent>(Time.seconds(lostTrackerTimeoutSeconds)) {
-                            @Override
-                            public long extractTimestamp(TrackerEvent element) {
-                                return element.getEventDt().toEpochSecond(OFFSET);
-                            }
-                        }
-                );
+                .assignTimestampsAndWatermarks(timestampAndWatermarkAssigner);
 
-        KeyedStream<TrackerEvent, String> streamByTrackerId = stream
-                .keyBy(TrackerEvent::getTrackerId);
+        KeyedStream<TrackerEvent, String> streamByTrackerId = stream.keyBy(TrackerEvent::getTrackerId);
 
         SingleOutputStreamOperator<EventTrigger> process = streamByTrackerId
                 .countWindow(1)//ignored due to specified time trigger below
-                .trigger(processTimeLostTrackerTrigger(lostTrackerTimeoutSeconds))
-                .process(processWindowFunction());
-        process.addSink(new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties));
-        process.print("\nSIGNAL_LOST >>>");
+                .trigger(ProcessSignalLost.processTimeLostTrackerTrigger(LOST_SIGNAL_EVALUATION_PERIOD_SECONDS))
+                .process(new ProcessSignalLost(lostTrackerTimeoutSeconds, timestampAndWatermarkAssigner));
+        process.addSink(getEventTriggerSink(triggersTopic, properties));
+        process.print("SIGNAL_LOST >>>");
 
 
         long dataGapTimegapSeconds = parameterTool.getLong("data.gap.timegap.seconds", DEFAULT_DATA_GAP_TIMEGAP_SECONDS);
@@ -103,166 +99,37 @@ public class WialonTrackerTriggers {
 
         SingleOutputStreamOperator<EventTrigger> processedDataGap = streamByTrackerId
                 .countWindow(2)
-                .process(processDataGap(dataGapTimegapSeconds, dataGapDistanceMeters, dataGapSpeedKmh));
-        processedDataGap.addSink(new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties));
-        processedDataGap.print("\nTRACKER_DATA_GAP >>>");
+                .process(new ProcessDataGap(dataGapTimegapSeconds, dataGapDistanceMeters, dataGapSpeedKmh));
+        processedDataGap.addSink(getEventTriggerSink(triggersTopic, properties));
+        processedDataGap.print("TRACKER_DATA_GAP >>>");
 
 
         SingleOutputStreamOperator<EventTrigger> processedFuelLevel = streamByTrackerId
-                .countWindow(6)
-                .process(processFuelLevel());
-        processedFuelLevel.addSink(new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties));
-        processedFuelLevel.print("\nFUEL_LEVEL_JUMP >>>");
+                .countWindow(6, 1)
+                .process(new ProcessFuelLevel(DEFAULT_FUEL_LEVEL_SPIKE));
+        processedFuelLevel.addSink(getEventTriggerSink(triggersTopic, properties));
+        processedFuelLevel.print("FUEL_LEVEL_JUMP >>>");
 
 
-        SingleOutputStreamOperator<EventTrigger> processPowerLost = streamByTrackerId.process(new KeyedProcessFunction<String, TrackerEvent, EventTrigger>() {
-            @Override
-            public void processElement(TrackerEvent value, Context ctx, Collector<EventTrigger> out) throws Exception {
-                if (value.getSpeed() > 0 && value.getPowerLevel() < 0) {
-                    EventTrigger eventTrigger = new EventTrigger();
-                    eventTrigger.setTrackerId(value.getTrackerId());
-                    eventTrigger.setTriggerDt(LocalDateTime.now());
-                    eventTrigger.setTriggerInfo("Speed: " + value.getSpeed() + " km/h, powerLevel: " + value.getPowerLevel());
-                    eventTrigger.setTriggerType(POWER_LOST);
-
-                    eventTrigger.setEventDt(value.getEventDt());
-                    out.collect(eventTrigger);
-                }
-            }
-        });
-        processPowerLost.addSink(new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties));
-        processPowerLost.print("\nPOWER_LOST >>>");
+        SingleOutputStreamOperator<EventTrigger> processPowerLost = streamByTrackerId.process(new ProcessPowerLost());
+        processPowerLost.addSink(getEventTriggerSink(triggersTopic, properties));
+        processPowerLost.print("POWER_LOST >>>");
 
         env.execute();
 
     }
 
-    private static PurgingTrigger<Object, GlobalWindow> processTimeLostTrackerTrigger(int lostTrackerTimeoutSeconds) {
-        return PurgingTrigger.of(ContinuousProcessingTimeTrigger.of(Time.seconds(lostTrackerTimeoutSeconds)));
-    }
-
-    private static ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> processWindowFunction() {
-        return new ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow>() {
-
+    private static BoundedOutOfOrdernessTimestampExtractor<TrackerEvent> getTimestampAndWatermarkAssigner(int lostTrackerTimeoutSeconds) {
+        return new BoundedOutOfOrdernessTimestampExtractor<TrackerEvent>(Time.seconds(lostTrackerTimeoutSeconds)) {
             @Override
-            public void process(String key, Context context, Iterable<TrackerEvent> elements, Collector<EventTrigger> out) {
-
-                List<LocalDateTime> eventDates = new ArrayList<>();
-                for (TrackerEvent event : elements) {
-                    eventDates.add(event.getEventDt());
-                }
-
-                // Zero or 1 event in lostTrackerTimeoutSeconds = SIGNAL_LOST event
-                if (eventDates.size() <= 1) {
-                    EventTrigger eventTrigger = new EventTrigger();
-                    eventTrigger.setTrackerId(key);
-                    eventTrigger.setTriggerDt(LocalDateTime.now());
-                    eventTrigger.setTriggerInfo("Count of elements: " + eventDates.size() + ", eventsDt: " + eventDates.toString());
-                    eventTrigger.setTriggerType(SIGNAL_LOST);
-
-                    eventTrigger.setEventDt(eventDates.size() > 0 ? eventDates.get(0) : null);
-                    out.collect(eventTrigger);
-                }
-//                else {
-//                    System.out.println("\t\t//" + LocalDateTime.now() + "// Tracker: " + key + " Count in window: " + count + " dates: " + eventDates.toString());
-//                }
-
+            public long extractTimestamp(TrackerEvent element) {
+                return element.getEventDt().toEpochSecond(OFFSET);
             }
         };
     }
 
-    private static ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> processDataGap(long timeGap, int distanceGap, int speed) {
-        return new ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow>() {
-
-            @Override
-            public void process(String key, Context context, Iterable<TrackerEvent> elements, Collector<EventTrigger> out) {
-
-                List<TrackerEvent> events = new ArrayList<>();
-                elements.forEach(events::add);
-
-                if (events.size() != 2) {
-                    log.warn("For data-gap trigger window should contain 2 elements");
-                    return;
-                }
-
-                TrackerEvent trackerEvent1 = events.get(0);
-                TrackerEvent trackerEvent2 = events.get(1);
-
-                Duration duration = Duration.between(trackerEvent1.getEventDt(), trackerEvent2.getEventDt());
-                if (duration.getSeconds() < timeGap)
-                    return;
-
-                if (trackerEvent1.getSpeed() < speed || trackerEvent2.getSpeed() < speed)
-                    return;
-
-                ArrayList<Double> coordinates1 = trackerEvent1.getCoordinates();
-                ArrayList<Double> coordinates2 = trackerEvent2.getCoordinates();
-                double distanceM = DabBdUtils.distance(coordinates1.get(0), coordinates1.get(1), coordinates2.get(0), coordinates2.get(1), 'K') / 1000;
-                if (distanceM < distanceGap)
-                    return;
-
-
-                EventTrigger eventTrigger = new EventTrigger();
-                eventTrigger.setTrackerId(key);
-                eventTrigger.setTriggerDt(LocalDateTime.now());
-                eventTrigger.setTriggerInfo("Time gap: " + duration.getSeconds() + " s, speed1: "
-                        + trackerEvent1.getSpeed() + " km/h, speed2: "
-                        + trackerEvent2.getSpeed() + " km/h, distance: "
-                        + distanceM + " m.");
-                eventTrigger.setTriggerType(TRACKER_DATA_GAP);
-                eventTrigger.setEventDt(trackerEvent2.getEventDt());
-
-                out.collect(eventTrigger);
-
-            }
-        };
-    }
-
-    private static ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> processFuelLevel() {
-        return new ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow>() {
-
-            @Override
-            public void process(String key, Context context, Iterable<TrackerEvent> elements, Collector<EventTrigger> out) {
-
-                List<TrackerEvent> events = new ArrayList<>();
-                elements.forEach(events::add);
-
-                if (events.size() != 6) {
-                    log.warn("For data-gap trigger window should contain 2 elements");
-                    return;
-                }
-
-                TrackerEvent trackerEvent1 = events.get(0);
-                Integer fuelLevel1 = trackerEvent1.getFuelLevel();
-                int fuelBaseLevel = fuelLevel1 > 0 ? fuelLevel1 : 1;
-                ArrayList<Integer> agg = new ArrayList<>();
-                for (int i = 1; i < 6; i++) {
-                    TrackerEvent trackerEvent = events.get(i);
-                    Integer fuelLevelN = trackerEvent.getFuelLevel();
-                    int diff = fuelLevel1 - fuelLevelN;
-                    agg.add(((Math.abs(diff / fuelBaseLevel)) * 100 < DEFAULT_FUEL_LEVEL_SPIKE) ? 0 : Integer.signum(diff));
-                }
-
-                if (agg.stream().anyMatch(d -> d == 0)) {
-                    // not all 5 levels had a diff > N% -> not match trigger definition
-                    return;
-                }
-                if (Math.abs(agg.stream().mapToInt(value -> value).sum()) != 5) {
-                    // there was + and - spikes ing fuel level -> not match trigger definition
-                    return;
-                }
-
-                EventTrigger eventTrigger = new EventTrigger();
-                eventTrigger.setTrackerId(key);
-                eventTrigger.setTriggerDt(LocalDateTime.now());
-                eventTrigger.setTriggerInfo("");
-                eventTrigger.setTriggerType(FUEL_LEVEL_JUMP);
-                eventTrigger.setEventDt(trackerEvent1.getEventDt());
-
-                out.collect(eventTrigger);
-
-            }
-        };
+    private static FlinkKafkaProducer<EventTrigger> getEventTriggerSink(String triggersTopic, Properties properties) {
+        return new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties);
     }
 
 }
