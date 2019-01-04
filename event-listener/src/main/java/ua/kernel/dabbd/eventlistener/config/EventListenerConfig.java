@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class EventListenerConfig {
 
     private String topic;
+    private String triggersTopic;
     private Integer concurrency;
 
    static  {

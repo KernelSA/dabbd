@@ -16,6 +16,7 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer2;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 
 import java.util.HashMap;
@@ -52,10 +53,7 @@ public class ReceiverConfig {
         ConcurrentKafkaListenerContainerFactory<String, TrackerEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConcurrency(config.getConcurrency());
         factory.setConsumerFactory(consumerFactory);
-//        factory.setErrorHandler((thrownException, data) -> {
-//            log.error("Failed to read message: '" + data + "'", thrownException);
-//
-//        });
+
 
         return factory;
     }
@@ -65,7 +63,43 @@ public class ReceiverConfig {
 
         @Override
         public TrackerEvent apply(byte[] t, Headers u) {
-            log.warn("=> Failed to deserialize msg: '{}',\ttotal count: {}", new String(t), ++failedCounter);
+            if (log.isDebugEnabled()) {
+                log.debug("=> Failed to deserialize TrackerEvent msg: '{}',\ttotal count: {}", new String(t), ++failedCounter);
+            }
+            return null;
+        }
+    }
+
+
+    @Bean
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, EventTrigger>> eventTriggerKafkaListenerContainerFactory() {
+        Map<String, Object> props = getCommonConsumerProperties();
+
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer2.class);
+        props.put(ErrorHandlingDeserializer2.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
+        props.put(ErrorHandlingDeserializer2.VALUE_FUNCTION, FailedEventTriggerProvider.class);
+
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, EventTrigger.class.getCanonicalName());
+
+        ConsumerFactory<String, EventTrigger> consumerFactory = new DefaultKafkaConsumerFactory<>(props);
+
+        ConcurrentKafkaListenerContainerFactory<String, EventTrigger> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConcurrency(config.getConcurrency());
+        factory.setConsumerFactory(consumerFactory);
+
+        return factory;
+    }
+
+    public static class FailedEventTriggerProvider implements BiFunction<byte[], Headers, EventTrigger> {
+        private long failedCounter = 0L;
+
+        @Override
+        public EventTrigger apply(byte[] t, Headers u) {
+            if (log.isDebugEnabled()) {
+                log.debug("=> Failed to deserialize EventTrigger msg: '{}',\ttotal count: {}", new String(t), ++failedCounter);
+            }
             return null;
         }
     }
