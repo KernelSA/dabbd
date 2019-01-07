@@ -1,0 +1,27 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '4.0.3'
+    id 'java'
+}
+
+springBoot {
+    buildInfo()
+}
+
+dependencies {
+    implementation project(":dabbd-commons")
+    implementation("org.apache.flink:flink-java:1.7.0")
+    implementation("org.apache.flink:flink-streaming-java_2.11:1.7.0")
+    implementation("org.apache.flink:flink-connector-kafka_2.11:1.7.0")
+
+    implementation("org.slf4j:slf4j-api:1.7.15")
+    implementation("org.slf4j:slf4j-log4j12:1.7.15")
+    implementation("log4j:log4j:1.2.17")
+
+    compileOnly('org.projectlombok:lombok')
+    testCompile('junit:junit:4.12')
+    testCompile('org.junit.platform:junit-platform-launcher:1.3.0')
+    
+    test {
+        useJUnitPlatform()
+    }
+}
