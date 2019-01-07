@@ -16,6 +16,7 @@ import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
+import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartitioner;
 import org.apache.flink.util.Collector;
 import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
@@ -129,7 +130,15 @@ public class WialonTrackerTriggers {
     }
 
     private static FlinkKafkaProducer<EventTrigger> getEventTriggerSink(String triggersTopic, Properties properties) {
-        return new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties);
+        return new FlinkKafkaProducer<>(triggersTopic, new JacksonSerializationSchema<>(EventTrigger.class), properties, Optional.of(new FlinkKafkaPartitioner<EventTrigger>() {
+
+            @Override
+            public int partition(EventTrigger record, byte[] key, byte[] value, String targetTopic, int[] partitions) {
+                int length = partitions.length;
+                int index = record.getTrackerId().hashCode() / length;
+                return partitions[index];
+            }
+        }));
     }
 
 }
