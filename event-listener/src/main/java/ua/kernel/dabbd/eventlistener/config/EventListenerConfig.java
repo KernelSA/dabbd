@@ -24,6 +24,7 @@ public class EventListenerConfig {
     private String triggersAutoOffsetResetConfig = "earliest";
     private Integer triggersConcurrency;
 
+    private Boolean writeEventsToTriggerLog;
 
     static {
         System.out.println("=>>>> EventListenerConfig");

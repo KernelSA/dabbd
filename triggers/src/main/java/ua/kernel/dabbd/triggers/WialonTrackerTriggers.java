@@ -7,34 +7,25 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
-import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.windowing.triggers.ContinuousProcessingTimeTrigger;
-import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
-import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartitioner;
-import org.apache.flink.util.Collector;
 import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.serde.JacksonDeserializationSchema;
 import ua.kernel.dabbd.commons.serde.JacksonSerializationSchema;
-import ua.kernel.dabbd.commons.util.DabBdUtils;
 import ua.kernel.dabbd.triggers.functions.ProcessDataGap;
 import ua.kernel.dabbd.triggers.functions.ProcessFuelLevel;
 import ua.kernel.dabbd.triggers.functions.ProcessPowerLost;
 import ua.kernel.dabbd.triggers.functions.ProcessSignalLost;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
-
-import static ua.kernel.dabbd.commons.model.TriggerType.*;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
 
 @Slf4j
 public class WialonTrackerTriggers {
@@ -135,7 +126,7 @@ public class WialonTrackerTriggers {
             @Override
             public int partition(EventTrigger record, byte[] key, byte[] value, String targetTopic, int[] partitions) {
                 int length = partitions.length;
-                int index = record.getTrackerId().hashCode() / length;
+                int index = Math.abs(record.getTrackerId().hashCode() % length);
                 return partitions[index];
             }
         }));
