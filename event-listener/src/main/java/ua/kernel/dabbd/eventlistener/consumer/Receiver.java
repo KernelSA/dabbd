@@ -13,6 +13,7 @@ import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.repository.EventsRepository;
 import ua.kernel.dabbd.commons.repository.TriggerLogRepository;
+import ua.kernel.dabbd.eventlistener.config.EventListenerConfig;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
@@ -25,6 +26,7 @@ import java.util.TimeZone;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class Receiver {
 
+    private final EventListenerConfig config;
     private final EventsRepository eventsRepository;
     private final TriggerLogRepository triggerLogRepository;
 
@@ -78,15 +80,21 @@ public class Receiver {
             return;
         }
 
-        TriggerLogEntity entity = TriggerLogEntity.builder()
+        TriggerLogEntity.TriggerLogEntityBuilder triggerLogEntityBuilder = TriggerLogEntity.builder()
                 .trackerId(message.getTrackerId())
                 .triggerType(message.getTriggerType().name())
                 .triggerDt(message.getTriggerDt())
-                .eventDt(message.getEventDt())
-                .triggerInfo(message.getTriggerInfo())
-                .build();
+                .eventDt(message.getEventDt());
 
-        triggerLogRepository.save(entity);
+        if (config.getWriteEventsToTriggerLog()) {
+            triggerLogEntityBuilder
+                    .triggerInfo("info: " + message.getTriggerInfo() + " events: " + message.getTriggerEvents().toString());
+        } else {
+            triggerLogEntityBuilder
+                    .triggerInfo(message.getTriggerInfo());
+        }
+
+        triggerLogRepository.save(triggerLogEntityBuilder.build());
 
     }
 
