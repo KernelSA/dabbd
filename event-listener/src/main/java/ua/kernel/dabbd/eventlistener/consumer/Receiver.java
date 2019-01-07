@@ -33,7 +33,8 @@ public class Receiver {
         log.info("=> Receiver init");
     }
 
-    @KafkaListener(containerFactory = "trackerEventKafkaListenerContainerFactory")
+    @KafkaListener(topics = "${kernel.dabbd.listener.events-topic}",
+            containerFactory = "trackerEventKafkaListenerContainerFactory")
     public void listenTrackerEvent(@Payload TrackerEvent message, @Headers Map<String, Object> headers) {
         if (log.isTraceEnabled()) {
             log.trace("=>> msg TrackerEvent: {}, with headers: '{}'", message, headers);
@@ -67,7 +68,8 @@ public class Receiver {
 
     }
 
-    @KafkaListener(containerFactory = "eventTriggerKafkaListenerContainerFactory")
+    @KafkaListener(topics = "${kernel.dabbd.listener.triggers-topic}",
+            containerFactory = "eventTriggerKafkaListenerContainerFactory")
     public void listenString(@Payload EventTrigger message, @Headers Map<String, Object> headers) {
         if (log.isTraceEnabled()) {
             log.trace("=>> EventTrigger:  {}, with headers: '{}'", message, headers);

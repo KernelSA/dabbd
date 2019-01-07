@@ -51,11 +51,9 @@ public class ReceiverConfig {
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TrackerEvent.class.getCanonicalName());
 
         ConsumerFactory<String, TrackerEvent> consumerFactory = new DefaultKafkaConsumerFactory<>(props);
-
         ConcurrentKafkaListenerContainerFactory<String, TrackerEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConcurrency(config.getEventsConcurrency());
         factory.setConsumerFactory(consumerFactory);
-
 
         return factory;
     }
