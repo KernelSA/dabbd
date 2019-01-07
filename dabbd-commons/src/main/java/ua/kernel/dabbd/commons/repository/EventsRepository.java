@@ -11,6 +11,7 @@ import java.util.List;
 public interface EventsRepository extends JpaRepository<EventsEntity, Long> {
 
     List<EventsEntity> findAllByTrackerId(String trackerId);
+
     List<EventsEntity> findByTrackerIdAndEventDtGreaterThan(String trackerId, LocalDateTime date);
 
 }

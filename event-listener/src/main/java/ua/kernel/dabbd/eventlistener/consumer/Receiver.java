@@ -8,8 +8,11 @@ import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 import ua.kernel.dabbd.commons.entity.EventsEntity;
+import ua.kernel.dabbd.commons.entity.TriggerLogEntity;
+import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.repository.EventsRepository;
+import ua.kernel.dabbd.commons.repository.TriggerLogRepository;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
@@ -23,13 +26,15 @@ import java.util.TimeZone;
 public class Receiver {
 
     private final EventsRepository eventsRepository;
+    private final TriggerLogRepository triggerLogRepository;
 
     @PostConstruct
     public void init() {
         log.info("=> Receiver init");
     }
 
-    @KafkaListener(topics = "${kernel.dabbd.listener.topic}", containerFactory = "trackerEventKafkaListenerContainerFactory")
+    @KafkaListener(topics = "${kernel.dabbd.listener.events-topic}",
+            containerFactory = "trackerEventKafkaListenerContainerFactory")
     public void listenTrackerEvent(@Payload TrackerEvent message, @Headers Map<String, Object> headers) {
         if (log.isTraceEnabled()) {
             log.trace("=>> msg TrackerEvent: {}, with headers: '{}'", message, headers);
@@ -60,10 +65,31 @@ public class Receiver {
                 .kafkaTimestamp(kafkaReceivedDt)
                 .build();
         eventsRepository.save(eventEntity);
-//        Iterable<EventsEntity> all = eventsRepository.findAll();
-//        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
 
     }
+
+    @KafkaListener(topics = "${kernel.dabbd.listener.triggers-topic}",
+            containerFactory = "eventTriggerKafkaListenerContainerFactory")
+    public void listenString(@Payload EventTrigger message, @Headers Map<String, Object> headers) {
+        if (log.isTraceEnabled()) {
+            log.trace("=>> EventTrigger:  {}, with headers: '{}'", message, headers);
+        }
+        if (message == null) {
+            return;
+        }
+
+        TriggerLogEntity entity = TriggerLogEntity.builder()
+                .trackerId(message.getTrackerId())
+                .triggerType(message.getTriggerType().name())
+                .triggerDt(message.getTriggerDt())
+                .eventDt(message.getEventDt())
+                .triggerInfo(message.getTriggerInfo())
+                .build();
+
+        triggerLogRepository.save(entity);
+
+    }
+
 
 /*    @KafkaListener(
             topics = "${kernel.dabbd.listener.topic}",
