@@ -13,7 +13,7 @@ public class EventListenerController {
 
     @RequestMapping("/test")
     public String test() {
-        System.out.println("=>> " + eventListenerConfig.getTopic());
+        System.out.println("=>> " + eventListenerConfig.getEventsTopic());
         return "Done!";
     }
 }

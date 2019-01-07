@@ -5,7 +5,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -28,17 +27,20 @@ import java.util.function.BiFunction;
 @Configuration
 public class ReceiverConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-    @Value("${spring.kafka.consumer.group-id}")
-    private String consumerGroupId;
+//    @Value("${spring.kafka.bootstrap-servers}")
+//    private String bootstrapServers;
+//    @Value("${spring.kafka.consumer.group-id}")
+//    private String consumerGroupId;
 
     @Autowired
     private EventListenerConfig config;
 
     @Bean
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, TrackerEvent>> trackerEventKafkaListenerContainerFactory() {
-        Map<String, Object> props = getCommonConsumerProperties();
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, config.getEventsConsumerGroup());
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, config.getEventsAutoOffsetResetConfig());
 
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -51,7 +53,7 @@ public class ReceiverConfig {
         ConsumerFactory<String, TrackerEvent> consumerFactory = new DefaultKafkaConsumerFactory<>(props);
 
         ConcurrentKafkaListenerContainerFactory<String, TrackerEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConcurrency(config.getConcurrency());
+        factory.setConcurrency(config.getEventsConcurrency());
         factory.setConsumerFactory(consumerFactory);
 
 
@@ -73,7 +75,11 @@ public class ReceiverConfig {
 
     @Bean
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, EventTrigger>> eventTriggerKafkaListenerContainerFactory() {
-        Map<String, Object> props = getCommonConsumerProperties();
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, config.getTriggersConsumerGroup());
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, config.getTriggersAutoOffsetResetConfig());
+
 
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -86,7 +92,7 @@ public class ReceiverConfig {
         ConsumerFactory<String, EventTrigger> consumerFactory = new DefaultKafkaConsumerFactory<>(props);
 
         ConcurrentKafkaListenerContainerFactory<String, EventTrigger> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConcurrency(config.getConcurrency());
+        factory.setConcurrency(config.getTriggersConcurrency());
         factory.setConsumerFactory(consumerFactory);
 
         return factory;
@@ -104,6 +110,8 @@ public class ReceiverConfig {
         }
     }
 
+    /*
+        //FOR DEBUGGING
     @Bean
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> stringKafkaListenerContainerFactory() {
         Map<String, Object> props = getCommonConsumerProperties();
@@ -120,10 +128,11 @@ public class ReceiverConfig {
 
     private Map<String, Object> getCommonConsumerProperties() {
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, config.getEventsConsumerGroup());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         return props;
     }
+*/
 
 }

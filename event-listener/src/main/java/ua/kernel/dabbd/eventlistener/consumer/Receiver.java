@@ -33,7 +33,7 @@ public class Receiver {
         log.info("=> Receiver init");
     }
 
-    @KafkaListener(topics = "${kernel.dabbd.listener.topic}", containerFactory = "trackerEventKafkaListenerContainerFactory")
+    @KafkaListener(containerFactory = "trackerEventKafkaListenerContainerFactory")
     public void listenTrackerEvent(@Payload TrackerEvent message, @Headers Map<String, Object> headers) {
         if (log.isTraceEnabled()) {
             log.trace("=>> msg TrackerEvent: {}, with headers: '{}'", message, headers);
@@ -64,17 +64,13 @@ public class Receiver {
                 .kafkaTimestamp(kafkaReceivedDt)
                 .build();
         eventsRepository.save(eventEntity);
-//        Iterable<EventsEntity> all = eventsRepository.findAll();
-//        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
 
     }
 
-    @KafkaListener(
-            topics = "${kernel.dabbd.listener.triggersTopic}",
-            containerFactory = "eventTriggerKafkaListenerContainerFactory")
+    @KafkaListener(containerFactory = "eventTriggerKafkaListenerContainerFactory")
     public void listenString(@Payload EventTrigger message, @Headers Map<String, Object> headers) {
         if (log.isTraceEnabled()) {
-            log.trace("=>> EventTrigger: {}", message);
+            log.trace("=>> EventTrigger:  {}, with headers: '{}'", message, headers);
         }
         if (message == null) {
             return;
@@ -85,14 +81,10 @@ public class Receiver {
                 .triggerType(message.getTriggerType().name())
                 .triggerDt(message.getTriggerDt())
                 .eventDt(message.getEventDt())
-//                .triggerInfo(message.getTriggerInfo())
+                .triggerInfo(message.getTriggerInfo())
                 .build();
 
         triggerLogRepository.save(entity);
-
-
-//        Iterable<EventsEntity> all = eventsRepository.findAll();
-//        all.forEach(eventsEntity -> log.info("Event from DB: {}", eventsEntity));
 
     }
 

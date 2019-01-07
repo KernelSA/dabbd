@@ -15,8 +15,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity(name = "LOG_TRIGGERS")
-
-@SQLInsert(sql = "insert into log_triggers (tracker_id, trigger_type, trigger_dt, event_dt) values (?, ?, ?, ?)", check = ResultCheckStyle.NONE)
 public class TriggerLogEntity {
 
     @Id
@@ -31,8 +29,8 @@ public class TriggerLogEntity {
     private LocalDateTime triggerDt;
     @Column(name = "event_dt")       //without Time zone
     private LocalDateTime eventDt;
-//    @Column(name = "trigger_info", length = 3000)                      //(20),
-//    private String triggerInfo;
+    @Column(name = "trigger_info", length = 3000)                      //(20),
+    private String triggerInfo;
 
 
 }

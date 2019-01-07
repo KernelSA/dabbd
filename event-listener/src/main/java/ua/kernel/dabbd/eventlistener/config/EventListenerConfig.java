@@ -11,11 +11,21 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "kernel.dabbd.listener")
 public class EventListenerConfig {
 
-    private String topic;
-    private String triggersTopic;
-    private Integer concurrency;
 
-   static  {
+    private String bootstrapServers;
+
+    private String eventsTopic;
+    private String eventsConsumerGroup;
+    private String eventsAutoOffsetResetConfig = "earliest";
+    private Integer eventsConcurrency;
+
+    private String triggersTopic;
+    private String triggersConsumerGroup;
+    private String triggersAutoOffsetResetConfig = "earliest";
+    private Integer triggersConcurrency;
+
+
+    static {
         System.out.println("=>>>> EventListenerConfig");
     }
 
