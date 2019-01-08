@@ -10,7 +10,7 @@ import java.util.Collections;
 
 import static ua.kernel.dabbd.commons.model.TriggerType.POWER_LOST;
 
-public class ProcessPowerLost extends KeyedProcessFunction<String, TrackerEvent, EventTrigger> {
+public class ProcessPowerLost1 extends KeyedProcessFunction<String, TrackerEvent, EventTrigger> {
 
     @Override
     public void processElement(TrackerEvent value, Context ctx, Collector<EventTrigger> out) {

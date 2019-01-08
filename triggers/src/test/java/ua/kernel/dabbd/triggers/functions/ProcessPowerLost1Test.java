@@ -1,6 +1,5 @@
 package ua.kernel.dabbd.triggers.functions;
 
-import org.junit.Before;
 import org.junit.Test;
 import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
@@ -9,14 +8,13 @@ import ua.kernel.dabbd.triggers.functions.util.TestCollector;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
-public class ProcessPowerLostTest {
+public class ProcessPowerLost1Test {
     private static final LocalDateTime TEST_TIME = LocalDateTime.now();
 
-    private ProcessPowerLost sut = new ProcessPowerLost();
+    private ProcessPowerLost1 sut = new ProcessPowerLost1();
 
 
     @Test
