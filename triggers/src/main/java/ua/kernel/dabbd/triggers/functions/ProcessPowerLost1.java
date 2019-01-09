@@ -10,6 +10,7 @@ import java.util.Collections;
 
 import static ua.kernel.dabbd.commons.model.TriggerType.POWER_LOST;
 
+@Deprecated
 public class ProcessPowerLost1 extends KeyedProcessFunction<String, TrackerEvent, EventTrigger> {
 
     @Override

@@ -17,6 +17,7 @@ import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.serde.JacksonDeserializationSchema;
 import ua.kernel.dabbd.commons.serde.JacksonSerializationSchema;
+import ua.kernel.dabbd.triggers.config.TriggerParam;
 import ua.kernel.dabbd.triggers.functions.ProcessDataGap;
 import ua.kernel.dabbd.triggers.functions.ProcessFuelLevel;
 import ua.kernel.dabbd.triggers.functions.ProcessPowerLostWindow;
@@ -42,33 +43,13 @@ public class WialonTrackerTriggers {
     private static final String BOOTSTRAP_SERVERS_ARG = "bootstrap.servers";
     private static final String AUTO_OFFSET_RESET_ARG = "auto.offset.reset";
     private static final String DEFAULT_AUTO_OFFSET_RESET = "latest";
-    private static final String LOST_TRACKER_TIMEOUT_SECONDS_ARG = "lost.tracker.timeout.seconds";
-    private static final String DATA_GAP_TIMEGAP_SECONDS_ARG = "data.gap.timegap.seconds";
-    private static final String DATA_GAP_DISTANCE_METERS_ARG = "data.gap.distance.meters";
-    private static final String DATA_GAP_SPEED_KMH_ARG = "data.gap.speed.kmh";
-    private static final String FUEL_LEVEL_SPIKE_ARG = "fuel.level.spike";
-    private static final String FUEL_LEVEL_WIDOW_SIZE_ARG = "fuel.level.widow.size";
-    private static final String POWER_LOST_WINDOW_SIZE_ARG = "power.lost.window.size";
 
     /**
      * Default kafka param values
      */
-    private static final String DEFAULT_TRACKERS_TOPIC = "WIALON_test";
-    private static final String DEFAULT_BROKERS = "ks-dmp-dev14.kyivstar.ua:6667,ks-dmp-dev15.kyivstar.ua:6667";
-    private static final String DEFAULT_TRIGGERS_TOPIC = "triggers";
-
-    /**
-     * Default triggers param values
-     */
-    private static final int DEFAULT_LOST_TRACKER_TIMEOUT_SECONDS = 5 * 60;
-    private static final long DEFAULT_DATA_GAP_TIMEGAP_SECONDS = 3 * 60;
-    private static final int DEFAULT_DATA_GAP_DISTANCE_METERS = 500;
-    private static final int DEFAULT_DATA_GAP_SPEED_KMH = 10;
-    private static final int LOST_SIGNAL_EVALUATION_PERIOD_SECONDS = 60;
-    private static final int DEFAULT_FUEL_LEVEL_WIDOW_SIZE = 6;
-    private static final int DEFAULT_FUEL_LEVEL_SPIKE = 10;
-    private static final int DEFAULT_POWER_LOST_WINDOW_SIZE = 3;
-
+    private static final String DEFAULT_TRACKERS_TOPIC = "WIALON";
+    private static final String DEFAULT_TRIGGERS_TOPIC = "TRIGGERS";
+    private static final String DEFAULT_BROKERS = "cf0:9092,cf1:9092";
 
     public static void main(String[] args) throws Exception {
         log.info("> WialonTopicTriggersExample >>>>>>>");
@@ -94,26 +75,27 @@ public class WialonTrackerTriggers {
         FlinkKafkaConsumer<TrackerEvent> trackerEventsKafkaSource = new FlinkKafkaConsumer<>(trackersTopic, new JacksonDeserializationSchema<>(TrackerEvent.class), properties);
         if (autoOffsetReset.equals("latest")) trackerEventsKafkaSource.setStartFromLatest();
 
-        int lostTrackerTimeoutSeconds = parameterTool.getInt(LOST_TRACKER_TIMEOUT_SECONDS_ARG, DEFAULT_LOST_TRACKER_TIMEOUT_SECONDS);
-        BoundedOutOfOrdernessTimestampExtractor<TrackerEvent> timestampAndWatermarkAssigner = getTimestampAndWatermarkAssigner(lostTrackerTimeoutSeconds);
+        int lostTrackerTimeoutSeconds = parameterTool.getInt(TriggerParam.LOST_TRACKER_TIMEOUT_SECONDS.key(), TriggerParam.LOST_TRACKER_TIMEOUT_SECONDS.defaultValue());
 
         DataStream<TrackerEvent> stream = env
                 .addSource(trackerEventsKafkaSource)
-                .assignTimestampsAndWatermarks(timestampAndWatermarkAssigner);
+                .assignTimestampsAndWatermarks(getTimestampAndWatermarkAssigner(lostTrackerTimeoutSeconds));
 
         KeyedStream<TrackerEvent, String> streamByTrackerId = stream.keyBy(TrackerEvent::getTrackerId);
 
+        int lostTrackerSpeedThreshold = parameterTool.getInt(TriggerParam.LOST_TRACKER_SPEED_THRESHOLD.key(), TriggerParam.LOST_TRACKER_SPEED_THRESHOLD.defaultValue());
+        int lostTrackerPowerThreshold = parameterTool.getInt(TriggerParam.LOST_TRACKER_POWER_THRESHOLD.key(), TriggerParam.LOST_TRACKER_POWER_THRESHOLD.defaultValue());
         SingleOutputStreamOperator<EventTrigger> process = streamByTrackerId
                 .countWindow(1)//ignored due to specified time trigger below
-                .trigger(ProcessSignalLost.processTimeLostTrackerTrigger(LOST_SIGNAL_EVALUATION_PERIOD_SECONDS))
-                .process(new ProcessSignalLost(lostTrackerTimeoutSeconds, timestampAndWatermarkAssigner));
+                .trigger(ProcessSignalLost.processTimeLostTrackerTrigger(TriggerParam.LOST_SIGNAL_EVALUATION_PERIOD_SECONDS))
+                .process(new ProcessSignalLost(lostTrackerTimeoutSeconds, lostTrackerSpeedThreshold, lostTrackerPowerThreshold));
         process.addSink(getEventTriggerSink(triggersTopic, properties));
         process.print("SIGNAL_LOST >>>");
 
 
-        long dataGapTimegapSeconds = parameterTool.getLong(DATA_GAP_TIMEGAP_SECONDS_ARG, DEFAULT_DATA_GAP_TIMEGAP_SECONDS);
-        int dataGapDistanceMeters = parameterTool.getInt(DATA_GAP_DISTANCE_METERS_ARG, DEFAULT_DATA_GAP_DISTANCE_METERS);
-        int dataGapSpeedKmh = parameterTool.getInt(DATA_GAP_SPEED_KMH_ARG, DEFAULT_DATA_GAP_SPEED_KMH);
+        int dataGapTimegapSeconds = parameterTool.getInt(TriggerParam.DATA_GAP_TIMEGAP_SECONDS.key(), TriggerParam.DATA_GAP_TIMEGAP_SECONDS.defaultValue());
+        int dataGapDistanceMeters = parameterTool.getInt(TriggerParam.DATA_GAP_DISTANCE_METERS.key(), TriggerParam.DATA_GAP_DISTANCE_METERS.defaultValue());
+        int dataGapSpeedKmh = parameterTool.getInt(TriggerParam.DATA_GAP_SPEED_KMH.key(), TriggerParam.DATA_GAP_SPEED_KMH.defaultValue());
 
         SingleOutputStreamOperator<EventTrigger> processedDataGap = streamByTrackerId
                 .countWindow(2, 1)
@@ -121,8 +103,8 @@ public class WialonTrackerTriggers {
         processedDataGap.addSink(getEventTriggerSink(triggersTopic, properties));
         processedDataGap.print("TRACKER_DATA_GAP >>>");
 
-        int fuelLevelSpikeArg = parameterTool.getInt(FUEL_LEVEL_SPIKE_ARG, DEFAULT_FUEL_LEVEL_SPIKE);
-        int fuelLevelWindowSize = parameterTool.getInt(FUEL_LEVEL_WIDOW_SIZE_ARG, DEFAULT_FUEL_LEVEL_WIDOW_SIZE);
+        int fuelLevelSpikeArg = parameterTool.getInt(TriggerParam.FUEL_LEVEL_SPIKE.key(), TriggerParam.FUEL_LEVEL_SPIKE.defaultValue());
+        int fuelLevelWindowSize = parameterTool.getInt(TriggerParam.FUEL_LEVEL_WIDOW_SIZE.key(), TriggerParam.FUEL_LEVEL_WIDOW_SIZE.defaultValue());
         SingleOutputStreamOperator<EventTrigger> processedFuelLevel = streamByTrackerId
                 .countWindow(fuelLevelWindowSize, 1)
                 .process(new ProcessFuelLevel(fuelLevelSpikeArg));
@@ -130,10 +112,12 @@ public class WialonTrackerTriggers {
         processedFuelLevel.print("FUEL_LEVEL_JUMP >>>");
 
 
-        int powerLostWindowSize = parameterTool.getInt(POWER_LOST_WINDOW_SIZE_ARG, DEFAULT_POWER_LOST_WINDOW_SIZE);
+        int powerLostWindowSize = parameterTool.getInt(TriggerParam.POWER_LOST_WINDOW_SIZE.key(), TriggerParam.POWER_LOST_WINDOW_SIZE.defaultValue());
+        int powerLostZeroPowerCount = parameterTool.getInt(TriggerParam.POWER_LOST_ZERO_POWER_COUNT.key(), TriggerParam.POWER_LOST_ZERO_POWER_COUNT.defaultValue());
+        int powerLostSpeedLimit = parameterTool.getInt(TriggerParam.POWER_LOST_SPEED_LIMIT.key(), TriggerParam.POWER_LOST_SPEED_LIMIT.defaultValue());
         SingleOutputStreamOperator<EventTrigger> processPowerLost = streamByTrackerId
                 .countWindow(powerLostWindowSize, 1)
-                .process(new ProcessPowerLostWindow());
+                .process(new ProcessPowerLostWindow(powerLostZeroPowerCount, powerLostSpeedLimit));
         processPowerLost.addSink(getEventTriggerSink(triggersTopic, properties));
         processPowerLost.print("POWER_LOST >>>");
 

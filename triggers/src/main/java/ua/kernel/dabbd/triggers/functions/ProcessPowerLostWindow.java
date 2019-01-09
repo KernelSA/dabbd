@@ -16,31 +16,49 @@ import static ua.kernel.dabbd.commons.model.TriggerType.POWER_LOST;
 @Slf4j
 public class ProcessPowerLostWindow extends ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> {
 
+    private int zeroPowerCount;
+    private int speedLimit;
+
+    public ProcessPowerLostWindow(int zeroPowerCount, int speedLimit) {
+        this.zeroPowerCount = zeroPowerCount;
+        this.speedLimit = speedLimit;
+    }
+
     @Override
     public void process(String key, Context context, Iterable<TrackerEvent> elements, Collector<EventTrigger> out) {
 
         List<TrackerEvent> events = new ArrayList<>();
         elements.forEach(events::add);
 
-        if (events.size() < 2) {
-            log.warn("For POWER_LOST trigger - window should contain more then 2 elements");
+        if (events.size() < 3 && events.size() < zeroPowerCount) {
+            log.warn("POWER_LOST trigger - window should contain more then 2 elements and zeroPowerCount less then window size. Actual count of events in window {}", events.size());
             return;
         }
-        boolean agg = true;
-        for (int i = 0; i < events.size() - 1; i++) {
-            agg &= events.get(i).getPowerLevel() > 0;
-        }
-        TrackerEvent value = events.get(events.size() - 1);
 
-        if (value.getSpeed() > 0 && value.getPowerLevel() <= 0 && agg) {
+        if (events.stream().anyMatch(trackerEvent -> trackerEvent.getSpeed() <= speedLimit)) {
+            // not all events have speed > 2 km/h
+            return;
+        }
+
+
+        boolean aggPositive = true;
+        for (int i = 0; i < events.size() - zeroPowerCount; i++) {
+            aggPositive &= events.get(i).getPowerLevel() > 0;
+        }
+        boolean aggNegative = true;
+        for (int i = events.size() - zeroPowerCount; i < events.size(); i++) {
+            aggNegative &= events.get(i).getPowerLevel() <= 0;
+        }
+
+        if (aggPositive && aggNegative) {
             EventTrigger eventTrigger = new EventTrigger();
-            eventTrigger.setTrackerId(value.getTrackerId());
+            eventTrigger.setTrackerId(key);
             eventTrigger.setTriggerDt(LocalDateTime.now());
-            eventTrigger.setTriggerInfo("Speed: " + value.getSpeed() + " km/h, powerLevel: " + value.getPowerLevel());
+            eventTrigger.setTriggerInfo("Power greater then zero for " + (events.size() - zeroPowerCount) + " and zero for " + zeroPowerCount + " events");
             eventTrigger.setTriggerEvents(events);
             eventTrigger.setTriggerType(POWER_LOST);
 
-            eventTrigger.setEventDt(value.getEventDt());
+            eventTrigger.setEventDt(events.get(events.size() - 1).getEventDt());
             out.collect(eventTrigger);
         }
 

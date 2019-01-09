@@ -16,7 +16,7 @@ public class ProcessPowerLostWindowTest {
 
     private static final LocalDateTime TEST_TIME = LocalDateTime.now();
 
-    private ProcessPowerLostWindow sut = new ProcessPowerLostWindow();
+    private ProcessPowerLostWindow sut = new ProcessPowerLostWindow(2, 2);
     private ArrayList<TrackerEvent> events;
 
 
@@ -45,7 +45,7 @@ public class ProcessPowerLostWindowTest {
         events.add(trackerEvent1);
 
         TrackerEvent trackerEvent2 = new TrackerEvent();
-        trackerEvent2.setPowerLevel(0);
+        trackerEvent2.setPowerLevel(12);
         trackerEvent2.setEventDt(TEST_TIME);
         trackerEvent2.setSpeed(11);
         trackerEvent2.setCoordinates(new ArrayList<Double>() {{
@@ -53,6 +53,26 @@ public class ProcessPowerLostWindowTest {
             add(31.51);
         }});
         events.add(trackerEvent2);
+
+        TrackerEvent trackerEvent3 = new TrackerEvent();
+        trackerEvent3.setPowerLevel(0);
+        trackerEvent3.setEventDt(TEST_TIME);
+        trackerEvent3.setSpeed(11);
+        trackerEvent3.setCoordinates(new ArrayList<Double>() {{
+            add(50.07);
+            add(31.51);
+        }});
+        events.add(trackerEvent3);
+
+        TrackerEvent trackerEvent4 = new TrackerEvent();
+        trackerEvent4.setPowerLevel(0);
+        trackerEvent4.setEventDt(TEST_TIME);
+        trackerEvent4.setSpeed(11);
+        trackerEvent4.setCoordinates(new ArrayList<Double>() {{
+            add(50.07);
+            add(31.51);
+        }});
+        events.add(trackerEvent4);
 
     }
 
@@ -70,7 +90,7 @@ public class ProcessPowerLostWindowTest {
     @Test
     public void testProcessPowerLostWindow_noTrigger_noZeroPower() {
         TestCollector<EventTrigger> out = new TestCollector<>(new ArrayList<>());
-        events.get(2).setPowerLevel(10);
+        events.get(4).setPowerLevel(10);
         sut.process("", null, events, out);
 
         System.out.println(out.list);
@@ -93,7 +113,7 @@ public class ProcessPowerLostWindowTest {
 
 
     @Test
-    public void testProcessPowerLostWindow_noTrigger_notAllPrevPowerssArePresent() {
+    public void testProcessPowerLostWindow_noTrigger_notAllPositivePowersArePresent() {
         TestCollector<EventTrigger> out = new TestCollector<>(new ArrayList<>());
         events.get(1).setPowerLevel(0);
         sut.process("", null, events, out);

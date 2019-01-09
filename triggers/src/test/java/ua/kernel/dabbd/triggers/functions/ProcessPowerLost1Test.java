@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
+@Deprecated
 public class ProcessPowerLost1Test {
     private static final LocalDateTime TEST_TIME = LocalDateTime.now();
 

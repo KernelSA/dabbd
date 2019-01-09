@@ -15,7 +15,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class ProcessDataGapTest {
-    private static final long DEFAULT_DATA_GAP_TIMEGAP_SECONDS = 3 * 60;
+    private static final int DEFAULT_DATA_GAP_TIMEGAP_SECONDS = 3 * 60;
     private static final int DEFAULT_DATA_GAP_DISTANCE_METERS = 500;
     private static final int DEFAULT_DATA_GAP_SPEED_KMH = 10;
 
