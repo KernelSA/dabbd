@@ -27,20 +27,20 @@ public class ProcessFuelLevel extends ProcessWindowFunction<TrackerEvent, EventT
         List<TrackerEvent> events = new ArrayList<>();
         elements.forEach(events::add);
 
-        if (events.size() != 6) {
-            log.warn("For data-gap trigger window should contain 2 elements");
+        if (events.size() < 3) {
+            log.warn("For FUEL_LEVEL_JUMP trigger - window should contain more then 3 elements");
             return;
         }
 
         TrackerEvent trackerEvent1 = events.get(0);
         Integer fuelLevel1 = trackerEvent1.getFuelLevel();
-//        double fuelBaseLevel = fuelLevel1 > 0 ? fuelLevel1 : 1.0;
+        double fuelBaseLevel = (fuelLevel1 > 0 ? fuelLevel1 : 1) * 1.0;
         ArrayList<Integer> agg = new ArrayList<>();
-        for (int i = 1; i < 6; i++) {
+        for (int i = 1; i < events.size(); i++) {
             TrackerEvent trackerEvent = events.get(i);
             Integer fuelLevelN = trackerEvent.getFuelLevel();
             int diff = fuelLevel1 - fuelLevelN;
-            agg.add((Math.abs(diff / (fuelLevelN * 1.0)) * 100 < fuelLevelSpike) ? 0 : Integer.signum(diff));
+            agg.add((Math.abs(diff / fuelBaseLevel) * 100 < fuelLevelSpike) ? 0 : Integer.signum(diff));
         }
 
         if (agg.stream().anyMatch(d -> d == 0)) {
@@ -48,7 +48,7 @@ public class ProcessFuelLevel extends ProcessWindowFunction<TrackerEvent, EventT
             return;
         }
         int fuelAggregate = agg.stream().mapToInt(value -> value).sum();
-        if (Math.abs(fuelAggregate) != 5) {
+        if (Math.abs(fuelAggregate) != events.size() - 1) {
             // there was + and - spikes ing fuel level -> not match trigger definition
             return;
         }

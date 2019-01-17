@@ -18,11 +18,11 @@ import static ua.kernel.dabbd.commons.model.TriggerType.TRACKER_DATA_GAP;
 @Slf4j
 public class ProcessDataGap extends ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> {
 
-    private long timeGap;
+    private int timeGap;
     private int distanceGap;
     private int speed;
 
-    public ProcessDataGap(long timeGap, int distanceGap, int speed) {
+    public ProcessDataGap(int timeGap, int distanceGap, int speed) {
         this.timeGap = timeGap;
         this.distanceGap = distanceGap;
         this.speed = speed;

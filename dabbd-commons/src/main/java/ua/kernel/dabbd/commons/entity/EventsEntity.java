@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ResultCheckStyle;
-import org.hibernate.annotations.SQLInsert;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -15,7 +13,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity(name = "EVENTS")
-@SQLInsert(sql = "insert into events (profile_updated, event_dt, fuel, gps_satellites, gsm_signal, kafka_timestamp, latitude, longitude, power, source_type, speed, tracker_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", check = ResultCheckStyle.NONE)
 public class EventsEntity {
 
     @Id
