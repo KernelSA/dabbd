@@ -17,7 +17,7 @@ public class Sender {
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-    @Value("${kernel.dabbd.listener.topic}")
+    @Value("${kernel.dabbd.listener.events-topic}")
     private String topic;
 
     public void send(String message){
