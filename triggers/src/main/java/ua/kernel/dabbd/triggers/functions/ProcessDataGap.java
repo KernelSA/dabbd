@@ -1,12 +1,14 @@
 package ua.kernel.dabbd.triggers.functions;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
 import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.util.DabBdUtils;
+import ua.kernel.dabbd.triggers.config.TriggerParam;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -22,10 +24,10 @@ public class ProcessDataGap extends ProcessWindowFunction<TrackerEvent, EventTri
     private int distanceGap;
     private int speed;
 
-    public ProcessDataGap(int timeGap, int distanceGap, int speed) {
-        this.timeGap = timeGap;
-        this.distanceGap = distanceGap;
-        this.speed = speed;
+    public ProcessDataGap(ParameterTool parameterTool) {
+        this.timeGap = parameterTool.getInt(TriggerParam.DATA_GAP_TIMEGAP_SECONDS.key(), TriggerParam.DATA_GAP_TIMEGAP_SECONDS.defaultValue());
+        this.distanceGap = parameterTool.getInt(TriggerParam.DATA_GAP_DISTANCE_METERS.key(), TriggerParam.DATA_GAP_DISTANCE_METERS.defaultValue());
+        this.speed = parameterTool.getInt(TriggerParam.DATA_GAP_SPEED_KMH.key(), TriggerParam.DATA_GAP_SPEED_KMH.defaultValue());
     }
 
     @Override

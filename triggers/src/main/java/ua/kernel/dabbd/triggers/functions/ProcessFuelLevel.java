@@ -1,11 +1,13 @@
 package ua.kernel.dabbd.triggers.functions;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
 import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
+import ua.kernel.dabbd.triggers.config.TriggerParam;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,8 +19,8 @@ import static ua.kernel.dabbd.commons.model.TriggerType.FUEL_LEVEL_JUMP;
 public class ProcessFuelLevel extends ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> {
     private int fuelLevelSpike;
 
-    public ProcessFuelLevel(int fuelLevelSpike) {
-        this.fuelLevelSpike = fuelLevelSpike;
+    public ProcessFuelLevel(ParameterTool parameterTool) {
+        this.fuelLevelSpike = parameterTool.getInt(TriggerParam.FUEL_LEVEL_SPIKE.key(), TriggerParam.FUEL_LEVEL_SPIKE.defaultValue());
     }
 
     @Override

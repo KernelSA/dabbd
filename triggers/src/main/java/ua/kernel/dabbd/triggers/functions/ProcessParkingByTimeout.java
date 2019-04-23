@@ -15,21 +15,19 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static ua.kernel.dabbd.commons.model.TriggerType.SIGNAL_LOST;
+import static ua.kernel.dabbd.commons.model.TriggerType.PARKING;
 
-public class ProcessSignalLost extends ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> {
+public class ProcessParkingByTimeout extends ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> {
 
     private int lostTrackerTimeoutSeconds;
     private int lostTrackerSpeedThreshold;
-    private int lostTrackerPowerThreshold;
 
-    public ProcessSignalLost(ParameterTool parameterTool) {
-        this.lostTrackerTimeoutSeconds = parameterTool.getInt(TriggerParam.LOST_TRACKER_TIMEOUT_SECONDS.key(), TriggerParam.LOST_TRACKER_TIMEOUT_SECONDS.defaultValue());
-        this.lostTrackerSpeedThreshold = parameterTool.getInt(TriggerParam.LOST_TRACKER_SPEED_THRESHOLD.key(), TriggerParam.LOST_TRACKER_SPEED_THRESHOLD.defaultValue());
-        this.lostTrackerPowerThreshold = parameterTool.getInt(TriggerParam.LOST_TRACKER_POWER_THRESHOLD.key(), TriggerParam.LOST_TRACKER_POWER_THRESHOLD.defaultValue());
+    public ProcessParkingByTimeout(ParameterTool parameterTool) {
+        this.lostTrackerTimeoutSeconds = parameterTool.getInt(TriggerParam.PARKING_TIME_WINDOW_SECONDS.key(), TriggerParam.PARKING_TIME_WINDOW_SECONDS.defaultValue());
+        this.lostTrackerSpeedThreshold = parameterTool.getInt(TriggerParam.PARKING_SPEED_THRESHOLD_KMH.key(), TriggerParam.PARKING_SPEED_THRESHOLD_KMH.defaultValue());
     }
 
-    public static PurgingTrigger<Object, GlobalWindow> processTimeLostTrackerTrigger(int evaluationPeriod) {
+    public static PurgingTrigger<Object, GlobalWindow> processTimeoutParkingTrigger(int evaluationPeriod) {
         return PurgingTrigger.of(ContinuousProcessingTimeTrigger.of(Time.seconds(evaluationPeriod)));
     }
 
@@ -44,7 +42,7 @@ public class ProcessSignalLost extends ProcessWindowFunction<TrackerEvent, Event
 
         if (events.stream().map(TrackerEvent::getEventDt).allMatch(eventDt -> eventDt.isBefore(timeoutDt))) {
             TrackerEvent lastTrackerEvent = events.get(events.size() - 1);
-            if (lastTrackerEvent.getSpeed() > lostTrackerSpeedThreshold && lastTrackerEvent.getPowerLevel() > lostTrackerPowerThreshold) {
+            if (lastTrackerEvent.getSpeed() <= lostTrackerSpeedThreshold) {
                 EventTrigger eventTrigger = new EventTrigger();
                 eventTrigger.setTrackerId(key);
                 eventTrigger.setTriggerDt(processingDt);
@@ -52,7 +50,7 @@ public class ProcessSignalLost extends ProcessWindowFunction<TrackerEvent, Event
                 LocalDateTime lastEventDt = lastTrackerEvent.getEventDt();
                 eventTrigger.setTriggerInfo("Last EventDt: " + lastEventDt + ", processingDt: " + processingDt);
                 eventTrigger.setTriggerEvents(events);
-                eventTrigger.setTriggerType(SIGNAL_LOST);
+                eventTrigger.setTriggerType(PARKING);
                 eventTrigger.setEventDt(lastEventDt);
                 out.collect(eventTrigger);
             }

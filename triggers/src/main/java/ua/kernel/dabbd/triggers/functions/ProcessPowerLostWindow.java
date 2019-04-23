@@ -1,11 +1,13 @@
 package ua.kernel.dabbd.triggers.functions;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.util.Collector;
 import ua.kernel.dabbd.commons.model.EventTrigger;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
+import ua.kernel.dabbd.triggers.config.TriggerParam;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,9 +21,9 @@ public class ProcessPowerLostWindow extends ProcessWindowFunction<TrackerEvent, 
     private int zeroPowerCount;
     private int speedLimit;
 
-    public ProcessPowerLostWindow(int zeroPowerCount, int speedLimit) {
-        this.zeroPowerCount = zeroPowerCount;
-        this.speedLimit = speedLimit;
+    public ProcessPowerLostWindow(ParameterTool parameterTool) {
+        this.zeroPowerCount = parameterTool.getInt(TriggerParam.POWER_LOST_ZERO_POWER_COUNT.key(), TriggerParam.POWER_LOST_ZERO_POWER_COUNT.defaultValue());
+        this.speedLimit = parameterTool.getInt(TriggerParam.POWER_LOST_SPEED_LIMIT.key(), TriggerParam.POWER_LOST_SPEED_LIMIT.defaultValue());
     }
 
     @Override

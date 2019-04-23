@@ -20,8 +20,10 @@ import ua.kernel.dabbd.commons.serde.JacksonSerializationSchema;
 import ua.kernel.dabbd.triggers.config.TriggerParam;
 import ua.kernel.dabbd.triggers.functions.ProcessDataGap;
 import ua.kernel.dabbd.triggers.functions.ProcessFuelLevel;
+import ua.kernel.dabbd.triggers.functions.ProcessParkingByTimeout;
 import ua.kernel.dabbd.triggers.functions.ProcessPowerLostWindow;
 import ua.kernel.dabbd.triggers.functions.ProcessSignalLost;
+import ua.kernel.dabbd.triggers.functions.ProcessParkingByTimeWindow;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -52,7 +54,7 @@ public class WialonTrackerTriggers {
     private static final String DEFAULT_BROKERS = "cf0:9092,cf1:9092";
 
     public static void main(String[] args) throws Exception {
-        log.info("> WialonTopicTriggersExample >>>>>>>");
+        log.info("> WialonTrackerTriggers >>>>>>>");
 
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
         log.info("Params for WialonTrackerTriggers: {}", parameterTool.getProperties());
@@ -83,43 +85,47 @@ public class WialonTrackerTriggers {
 
         KeyedStream<TrackerEvent, String> streamByTrackerId = stream.keyBy(TrackerEvent::getTrackerId);
 
-        int lostTrackerSpeedThreshold = parameterTool.getInt(TriggerParam.LOST_TRACKER_SPEED_THRESHOLD.key(), TriggerParam.LOST_TRACKER_SPEED_THRESHOLD.defaultValue());
-        int lostTrackerPowerThreshold = parameterTool.getInt(TriggerParam.LOST_TRACKER_POWER_THRESHOLD.key(), TriggerParam.LOST_TRACKER_POWER_THRESHOLD.defaultValue());
         SingleOutputStreamOperator<EventTrigger> process = streamByTrackerId
                 .countWindow(1)//ignored due to specified time trigger below
                 .trigger(ProcessSignalLost.processTimeLostTrackerTrigger(TriggerParam.LOST_SIGNAL_EVALUATION_PERIOD_SECONDS))
-                .process(new ProcessSignalLost(lostTrackerTimeoutSeconds, lostTrackerSpeedThreshold, lostTrackerPowerThreshold));
+                .process(new ProcessSignalLost(parameterTool));
         process.addSink(getEventTriggerSink(triggersTopic, properties));
         process.print("SIGNAL_LOST >>>");
 
-
-        int dataGapTimegapSeconds = parameterTool.getInt(TriggerParam.DATA_GAP_TIMEGAP_SECONDS.key(), TriggerParam.DATA_GAP_TIMEGAP_SECONDS.defaultValue());
-        int dataGapDistanceMeters = parameterTool.getInt(TriggerParam.DATA_GAP_DISTANCE_METERS.key(), TriggerParam.DATA_GAP_DISTANCE_METERS.defaultValue());
-        int dataGapSpeedKmh = parameterTool.getInt(TriggerParam.DATA_GAP_SPEED_KMH.key(), TriggerParam.DATA_GAP_SPEED_KMH.defaultValue());
-
         SingleOutputStreamOperator<EventTrigger> processedDataGap = streamByTrackerId
                 .countWindow(2, 1)
-                .process(new ProcessDataGap(dataGapTimegapSeconds, dataGapDistanceMeters, dataGapSpeedKmh));
+                .process(new ProcessDataGap(parameterTool));
         processedDataGap.addSink(getEventTriggerSink(triggersTopic, properties));
         processedDataGap.print("TRACKER_DATA_GAP >>>");
 
-        int fuelLevelSpikeArg = parameterTool.getInt(TriggerParam.FUEL_LEVEL_SPIKE.key(), TriggerParam.FUEL_LEVEL_SPIKE.defaultValue());
         int fuelLevelWindowSize = parameterTool.getInt(TriggerParam.FUEL_LEVEL_WIDOW_SIZE.key(), TriggerParam.FUEL_LEVEL_WIDOW_SIZE.defaultValue());
         SingleOutputStreamOperator<EventTrigger> processedFuelLevel = streamByTrackerId
                 .countWindow(fuelLevelWindowSize, 1)
-                .process(new ProcessFuelLevel(fuelLevelSpikeArg));
+                .process(new ProcessFuelLevel(parameterTool));
         processedFuelLevel.addSink(getEventTriggerSink(triggersTopic, properties));
         processedFuelLevel.print("FUEL_LEVEL_JUMP >>>");
 
 
         int powerLostWindowSize = parameterTool.getInt(TriggerParam.POWER_LOST_WINDOW_SIZE.key(), TriggerParam.POWER_LOST_WINDOW_SIZE.defaultValue());
-        int powerLostZeroPowerCount = parameterTool.getInt(TriggerParam.POWER_LOST_ZERO_POWER_COUNT.key(), TriggerParam.POWER_LOST_ZERO_POWER_COUNT.defaultValue());
-        int powerLostSpeedLimit = parameterTool.getInt(TriggerParam.POWER_LOST_SPEED_LIMIT.key(), TriggerParam.POWER_LOST_SPEED_LIMIT.defaultValue());
-        SingleOutputStreamOperator<EventTrigger> processPowerLost = streamByTrackerId
+         SingleOutputStreamOperator<EventTrigger> processPowerLost = streamByTrackerId
                 .countWindow(powerLostWindowSize, 1)
-                .process(new ProcessPowerLostWindow(powerLostZeroPowerCount, powerLostSpeedLimit));
+                .process(new ProcessPowerLostWindow(parameterTool));
         processPowerLost.addSink(getEventTriggerSink(triggersTopic, properties));
         processPowerLost.print("POWER_LOST >>>");
+
+        int parkingWindowSize = parameterTool.getInt(TriggerParam.PARKING_TIME_WINDOW_SECONDS.key(), TriggerParam.PARKING_TIME_WINDOW_SECONDS.defaultValue());
+        SingleOutputStreamOperator<EventTrigger> processParkingTrigger = streamByTrackerId
+                .timeWindow(Time.seconds(parkingWindowSize), Time.seconds(TriggerParam.PARKING_TIMEOUT_EVALUATION_PERIOD_SECONDS))
+                .process(new ProcessParkingByTimeWindow(parameterTool));
+        processParkingTrigger.addSink(getEventTriggerSink(triggersTopic, properties));
+        processParkingTrigger.print("PARKING TimeWindow >>>");
+
+        SingleOutputStreamOperator<EventTrigger> processStopTrackerTrigger = streamByTrackerId
+                .countWindow(1)//ignored due to specified time trigger below
+                .trigger(ProcessParkingByTimeout.processTimeoutParkingTrigger(TriggerParam.PARKING_TIMEOUT_EVALUATION_PERIOD_SECONDS))
+                .process(new ProcessParkingByTimeout(parameterTool));
+        processStopTrackerTrigger.addSink(getEventTriggerSink(triggersTopic, properties));
+        processStopTrackerTrigger.print("PARKING TimeOut >>>");
 
         env.execute();
 
