@@ -15,6 +15,7 @@ import ua.kernel.dabbd.triggers.config.TriggerParam;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static ua.kernel.dabbd.commons.model.TriggerType.PARKING;
@@ -44,9 +45,6 @@ public class ProcessParkingByTimeWindow extends ProcessWindowFunction<TrackerEve
         elements.forEach(events::add);
 
         LocalDateTime processingDt = LocalDateTime.now();
-        LocalDateTime timeoutDt = processingDt.minusSeconds(stopTrackerTimeoutSeconds); //TODO ????
-
-//        if (events.stream().map(TrackerEvent::getEventDt).allMatch(eventDt -> eventDt.isBefore(timeoutDt))) {
 
         double avgSpeed = events.stream().mapToInt(TrackerEvent::getSpeed).average().orElse(0);
         TrackerEvent firstEvent = events.get(0);
@@ -63,13 +61,13 @@ public class ProcessParkingByTimeWindow extends ProcessWindowFunction<TrackerEve
 
             LocalDateTime lastEventDt = events.get(events.size() - 1).getEventDt();
             eventTrigger.setTriggerInfo("Last EventDt: " + lastEventDt + ", avgSpeed: " + avgSpeed + ", maxDistanceM: " + maxDistanceM);
-            eventTrigger.setTriggerEvents(events);
+            eventTrigger.setTriggerEvents(Arrays.asList(firstEvent, events.get(events.size()-1)));
             eventTrigger.setTriggerType(PARKING);
             eventTrigger.setEventDt(lastEventDt);
             out.collect(eventTrigger);
 
         }
-//        }
+
     }
 }
 

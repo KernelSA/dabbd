@@ -1,5 +1,6 @@
 package ua.kernel.dabbd.triggers.functions;
 
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.junit.Before;
 import org.junit.Test;
 import ua.kernel.dabbd.commons.model.EventTrigger;
@@ -15,8 +16,10 @@ import static org.junit.Assert.assertThat;
 public class ProcessPowerLostWindowTest {
 
     private static final LocalDateTime TEST_TIME = LocalDateTime.now();
+    String[] args = {"--test"};
+    ParameterTool parameterTool = ParameterTool.fromArgs(args);
 
-    private ProcessPowerLostWindow sut = new ProcessPowerLostWindow(2, 2);
+    private ProcessPowerLostWindow sut = new ProcessPowerLostWindow(parameterTool);
     private ArrayList<TrackerEvent> events;
 
 

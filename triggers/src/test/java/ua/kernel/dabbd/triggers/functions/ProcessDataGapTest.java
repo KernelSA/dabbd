@@ -1,5 +1,6 @@
 package ua.kernel.dabbd.triggers.functions;
 
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.junit.Before;
 import org.junit.Test;
 import ua.kernel.dabbd.commons.model.EventTrigger;
@@ -18,8 +19,10 @@ public class ProcessDataGapTest {
     private static final int DEFAULT_DATA_GAP_TIMEGAP_SECONDS = 3 * 60;
     private static final int DEFAULT_DATA_GAP_DISTANCE_METERS = 500;
     private static final int DEFAULT_DATA_GAP_SPEED_KMH = 10;
+    String[] args = {"--test"};
+    ParameterTool parameterTool = ParameterTool.fromArgs(args);
 
-    private ProcessDataGap sut = new ProcessDataGap(DEFAULT_DATA_GAP_TIMEGAP_SECONDS, DEFAULT_DATA_GAP_DISTANCE_METERS, DEFAULT_DATA_GAP_SPEED_KMH);
+    private ProcessDataGap sut = new ProcessDataGap(parameterTool);
     private static final TrackerEvent TRACKER_EVENT_1 = new TrackerEvent();
     private static final TrackerEvent TRACKER_EVENT_2 = new TrackerEvent();
     private static final LocalDateTime TEST_TIME = LocalDateTime.now();

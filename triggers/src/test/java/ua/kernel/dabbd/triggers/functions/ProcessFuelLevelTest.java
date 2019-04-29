@@ -1,5 +1,6 @@
 package ua.kernel.dabbd.triggers.functions;
 
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.junit.Before;
 import org.junit.Test;
 import ua.kernel.dabbd.commons.model.EventTrigger;
@@ -17,8 +18,9 @@ public class ProcessFuelLevelTest {
 
     private static final LocalDateTime TEST_TIME = LocalDateTime.now();
     private static final int DEFAULT_FUEL_LEVEL_SPIKE = 10;
-
-    private ProcessFuelLevel sut = new ProcessFuelLevel(DEFAULT_FUEL_LEVEL_SPIKE);
+    String[] args = {"--test"};
+    ParameterTool parameterTool = ParameterTool.fromArgs(args);
+    private ProcessFuelLevel sut = new ProcessFuelLevel(parameterTool);
 
     private ArrayList<TrackerEvent> events;
 

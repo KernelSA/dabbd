@@ -16,6 +16,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:1.7.15")
     implementation("org.slf4j:slf4j-log4j12:1.7.15")
     implementation("log4j:log4j:1.2.17")
+    compile group: 'org.locationtech.jts', name: 'jts-core', version: '1.16.1'
 
     compileOnly('org.projectlombok:lombok')
     testCompile('junit:junit:4.12')

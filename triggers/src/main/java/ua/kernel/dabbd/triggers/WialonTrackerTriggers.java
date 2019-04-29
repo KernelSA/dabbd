@@ -131,7 +131,7 @@ public class WialonTrackerTriggers {
 
     }
 
-    private static BoundedOutOfOrdernessTimestampExtractor<TrackerEvent> getTimestampAndWatermarkAssigner(int lostTrackerTimeoutSeconds) {
+    public static BoundedOutOfOrdernessTimestampExtractor<TrackerEvent> getTimestampAndWatermarkAssigner(int lostTrackerTimeoutSeconds) {
         return new BoundedOutOfOrdernessTimestampExtractor<TrackerEvent>(Time.seconds(lostTrackerTimeoutSeconds)) {
             @Override
             public long extractTimestamp(TrackerEvent element) {
