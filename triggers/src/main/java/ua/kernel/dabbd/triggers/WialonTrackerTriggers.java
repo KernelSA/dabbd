@@ -107,7 +107,7 @@ public class WialonTrackerTriggers {
 
 
         int powerLostWindowSize = parameterTool.getInt(TriggerParam.POWER_LOST_WINDOW_SIZE.key(), TriggerParam.POWER_LOST_WINDOW_SIZE.defaultValue());
-         SingleOutputStreamOperator<EventTrigger> processPowerLost = streamByTrackerId
+        SingleOutputStreamOperator<EventTrigger> processPowerLost = streamByTrackerId
                 .countWindow(powerLostWindowSize, 1)
                 .process(new ProcessPowerLostWindow(parameterTool));
         processPowerLost.addSink(getEventTriggerSink(triggersTopic, properties));
@@ -115,7 +115,10 @@ public class WialonTrackerTriggers {
 
         int parkingWindowSize = parameterTool.getInt(TriggerParam.PARKING_TIME_WINDOW_SECONDS.key(), TriggerParam.PARKING_TIME_WINDOW_SECONDS.defaultValue());
         SingleOutputStreamOperator<EventTrigger> processParkingTrigger = streamByTrackerId
-                .timeWindow(Time.seconds(parkingWindowSize), Time.seconds(TriggerParam.PARKING_TIMEOUT_EVALUATION_PERIOD_SECONDS))
+                .timeWindow(Time.seconds(parkingWindowSize),
+//                        Time.seconds(TriggerParam.PARKING_TIMEOUT_EVALUATION_PERIOD_SECONDS)
+                        Time.seconds(parkingWindowSize / 2)
+                )
                 .process(new ProcessParkingByTimeWindow(parameterTool));
         processParkingTrigger.addSink(getEventTriggerSink(triggersTopic, properties));
         processParkingTrigger.print("PARKING TimeWindow >>>");

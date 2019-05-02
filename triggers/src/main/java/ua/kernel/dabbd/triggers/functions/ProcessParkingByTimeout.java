@@ -19,12 +19,12 @@ import static ua.kernel.dabbd.commons.model.TriggerType.PARKING;
 
 public class ProcessParkingByTimeout extends ProcessWindowFunction<TrackerEvent, EventTrigger, String, GlobalWindow> {
 
-    private int lostTrackerTimeoutSeconds;
-    private int lostTrackerSpeedThreshold;
+    private int trackerStoppedTimeoutSeconds;
+    private int trackerStoppedSpeedThreshold;
 
     public ProcessParkingByTimeout(ParameterTool parameterTool) {
-        this.lostTrackerTimeoutSeconds = parameterTool.getInt(TriggerParam.PARKING_TIME_WINDOW_SECONDS.key(), TriggerParam.PARKING_TIME_WINDOW_SECONDS.defaultValue());
-        this.lostTrackerSpeedThreshold = parameterTool.getInt(TriggerParam.PARKING_SPEED_THRESHOLD_KMH.key(), TriggerParam.PARKING_SPEED_THRESHOLD_KMH.defaultValue());
+        this.trackerStoppedTimeoutSeconds = parameterTool.getInt(TriggerParam.PARKING_TIME_WINDOW_SECONDS.key(), TriggerParam.PARKING_TIME_WINDOW_SECONDS.defaultValue());
+        this.trackerStoppedSpeedThreshold = parameterTool.getInt(TriggerParam.PARKING_SPEED_THRESHOLD_KMH.key(), TriggerParam.PARKING_SPEED_THRESHOLD_KMH.defaultValue());
     }
 
     public static PurgingTrigger<Object, GlobalWindow> processTimeoutParkingTrigger(int evaluationPeriod) {
@@ -38,11 +38,11 @@ public class ProcessParkingByTimeout extends ProcessWindowFunction<TrackerEvent,
         elements.forEach(events::add);
 
         LocalDateTime processingDt = LocalDateTime.now();
-        LocalDateTime timeoutDt = processingDt.minusSeconds(lostTrackerTimeoutSeconds);
+        LocalDateTime timeoutDt = processingDt.minusSeconds(trackerStoppedTimeoutSeconds);
 
         if (events.stream().map(TrackerEvent::getEventDt).allMatch(eventDt -> eventDt.isBefore(timeoutDt))) {
             TrackerEvent lastTrackerEvent = events.get(events.size() - 1);
-            if (lastTrackerEvent.getSpeed() <= lostTrackerSpeedThreshold) {
+            if (lastTrackerEvent.getSpeed() <= trackerStoppedSpeedThreshold) {
                 EventTrigger eventTrigger = new EventTrigger();
                 eventTrigger.setTrackerId(key);
                 eventTrigger.setTriggerDt(processingDt);
