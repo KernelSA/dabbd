@@ -60,7 +60,9 @@ public class ProcessParkingByTimeWindow extends ProcessWindowFunction<TrackerEve
             eventTrigger.setTriggerDt(processingDt);
 
             LocalDateTime lastEventDt = events.get(events.size() - 1).getEventDt();
-            eventTrigger.setTriggerInfo("Last EventDt: " + lastEventDt + ", avgSpeed: " + avgSpeed + ", maxDistanceM: " + maxDistanceM);
+            eventTrigger.setTriggerInfo("Temporal STOP. Last EventDt: " + lastEventDt
+                    + ", avgSpeed: " + avgSpeed + ", maxDistanceM: " + maxDistanceM
+                    +". Events in window: " + events.size());
             eventTrigger.setTriggerEvents(Arrays.asList(firstEvent, events.get(events.size()-1)));
             eventTrigger.setTriggerType(PARKING);
             eventTrigger.setEventDt(lastEventDt);

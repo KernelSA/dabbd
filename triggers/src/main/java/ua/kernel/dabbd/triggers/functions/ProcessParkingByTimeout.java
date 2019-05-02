@@ -13,6 +13,7 @@ import ua.kernel.dabbd.triggers.config.TriggerParam;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static ua.kernel.dabbd.commons.model.TriggerType.PARKING;
@@ -48,8 +49,9 @@ public class ProcessParkingByTimeout extends ProcessWindowFunction<TrackerEvent,
                 eventTrigger.setTriggerDt(processingDt);
 
                 LocalDateTime lastEventDt = lastTrackerEvent.getEventDt();
-                eventTrigger.setTriggerInfo("Last EventDt: " + lastEventDt + ", processingDt: " + processingDt);
-                eventTrigger.setTriggerEvents(events);
+                eventTrigger.setTriggerInfo("Tracker STOPPED and signal lost. Last EventDt: " + lastEventDt
+                        + ", processingDt: " + processingDt +". Events in window: " + events.size());
+                eventTrigger.setTriggerEvents(Arrays.asList(events.get(0),lastTrackerEvent));
                 eventTrigger.setTriggerType(PARKING);
                 eventTrigger.setEventDt(lastEventDt);
                 out.collect(eventTrigger);
