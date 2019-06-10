@@ -9,27 +9,25 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.model.WaybillRequest;
-import ua.kernel.dabbd.tracking.config.RouteTrackingProperties;
 
 import javax.annotation.PostConstruct;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.TimeZone;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class Receiver {
 
-    private final RouteTrackingProperties routeTrackingProperties;
+    private final TrackerService trackerService;
 
     @PostConstruct
     public void init() {
         log.info("=> Receiver init");
     }
-/*
-    @KafkaListener(topics = "${kernel.dabbd.listener.events-topic}",
+
+    @KafkaListener(
+            topics = "#{routeTrackingProperties.eventsTopic}",
+            groupId = "#{routeTrackingProperties.eventsConsumerGroup}",
             containerFactory = "trackerEventKafkaListenerContainerFactory")
     public void listenTrackerEvent(@Payload TrackerEvent message, @Headers Map<String, Object> headers) {
         if (log.isTraceEnabled()) {
@@ -38,20 +36,15 @@ public class Receiver {
         if (message == null) {
             return;
         }
-        LocalDateTime kafkaReceivedDt = null;
-        try {
-            kafkaReceivedDt = LocalDateTime.ofInstant(
-                    Instant.ofEpochMilli((Long) headers.get("kafka_receivedTimestamp")),
-                    TimeZone.getDefault().toZoneId());
-        } catch (Exception e) {
-            log.warn("Can't parse DateTime from 'kafka_receivedTimestamp' header", e);
-        }
 
+        trackerService.trackEvent(message);
 
-    }*/
+    }
 
-    @KafkaListener(topics = "#{routeTrackingProperties.waybillTopic}", groupId = "#{routeTrackingProperties.waybillConsumerGroup}",
-            containerFactory = "eventTriggerKafkaListenerContainerFactory")
+    @KafkaListener(
+            topics = "#{routeTrackingProperties.waybillTopic}",
+            groupId = "#{routeTrackingProperties.waybillConsumerGroup}",
+            containerFactory = "waybillKafkaListenerContainerFactory")
     public void listenString(@Payload WaybillRequest[] message, @Headers Map<String, Object> headers) {
         if (log.isTraceEnabled()) {
             log.trace("=>> EventTrigger:  {}, with headers: '{}'", message, headers);
@@ -61,6 +54,7 @@ public class Receiver {
         }
         log.info("=>> EventTrigger:  {}, with headers: '{}'", message[0], headers);
 
+        trackerService.addWaybill(message[0]);
     }
 
 }

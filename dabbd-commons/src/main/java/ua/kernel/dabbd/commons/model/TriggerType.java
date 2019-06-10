@@ -5,5 +5,6 @@ public enum  TriggerType {
     TRACKER_DATA_GAP,
     FUEL_LEVEL_JUMP,
     POWER_LOST,
-    PARKING
+    PARKING,
+    OUT_OF_ROUTE
 }

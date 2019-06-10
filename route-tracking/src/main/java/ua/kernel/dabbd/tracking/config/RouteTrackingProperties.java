@@ -21,7 +21,7 @@ public class RouteTrackingProperties {
     private String waybillAutoOffsetResetConfig = "earliest";
     private Integer waybillConcurrency;
 
-    private Boolean writeEventsToTriggerLog;
+    private String triggersTopic;
 
     static {
         System.out.println("=>>>> RouteTrackingProperties");

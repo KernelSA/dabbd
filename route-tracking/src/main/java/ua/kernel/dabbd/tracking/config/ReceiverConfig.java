@@ -73,7 +73,7 @@ public class ReceiverConfig {
 
 
     @Bean
-    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, WaybillRequest[]>> eventTriggerKafkaListenerContainerFactory() {
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, WaybillRequest[]>> waybillKafkaListenerContainerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, config.getWaybillConsumerGroup());
