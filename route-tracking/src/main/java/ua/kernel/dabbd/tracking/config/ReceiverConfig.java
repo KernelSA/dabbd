@@ -111,9 +111,9 @@ public class ReceiverConfig {
             }
 
             String data = new String(t);
-            String data2 = data.substring(1, data.length() - 2);
-
-            String strippedWaybill = data2.replaceAll("\\n", "");
+            String data2 = data.replaceAll("\\s+", "");
+            String data3 =data2.replaceFirst("\\[","");
+            String strippedWaybill = data3.substring(0, data3.lastIndexOf("]"));
 
             if (log.isTraceEnabled()) {
                 log.trace("Will try to deserialize WaybillRequest: '{} ... {}'", strippedWaybill.substring(0, 300), strippedWaybill.substring(strippedWaybill.length() - 100));
