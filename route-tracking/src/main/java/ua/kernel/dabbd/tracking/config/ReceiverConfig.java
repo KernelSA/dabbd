@@ -1,5 +1,7 @@
 package ua.kernel.dabbd.tracking.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.header.Headers;
@@ -17,7 +19,6 @@ import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer2;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.model.WaybillRequest;
-import ua.kernel.dabbd.commons.serde.JacksonDeserializationSchema;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -97,6 +98,9 @@ public class ReceiverConfig {
         return factory;
     }
 
+
+    private static ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
     public static class FailedWaybillRequestProvider implements BiFunction<byte[], Headers, WaybillRequest[]> {
         private long failedCounter = 0L;
 
@@ -106,18 +110,23 @@ public class ReceiverConfig {
                 log.trace("=> Failed to deserialize WaybillRequest msg: '{}',\ttotal count: {}", new String(t), ++failedCounter);
             }
 
-            JacksonDeserializationSchema<WaybillRequest> deserializationSchema = new JacksonDeserializationSchema<>(WaybillRequest.class);
             String data = new String(t);
             String data2 = data.substring(1, data.length() - 2);
 
             String strippedWaybill = data2.replaceAll("\\n", "");
 
             if (log.isTraceEnabled()) {
-                log.trace("Will try to deserialize WaybillRequest: '{} ... {}'", strippedWaybill.substring(0, 100), strippedWaybill.substring(strippedWaybill.length() - 100, strippedWaybill.length()));
+                log.trace("Will try to deserialize WaybillRequest: '{} ... {}'", strippedWaybill.substring(0, 300), strippedWaybill.substring(strippedWaybill.length() - 100));
             }
             WaybillRequest deserialize = null;
             try {
-                deserialize = deserializationSchema.deserialize(strippedWaybill.getBytes());
+                if (strippedWaybill.length() < 2) {
+                    return null;
+                }
+                if (mapper == null) {
+                    mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+                }
+                deserialize = mapper.readValue(strippedWaybill.getBytes(), WaybillRequest.class);
             } catch (IOException e) {
                 log.warn("Can't deserialize Waybill!", e);
             }
