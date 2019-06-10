@@ -17,9 +17,10 @@ import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer2;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import ua.kernel.dabbd.commons.model.TrackerEvent;
 import ua.kernel.dabbd.commons.model.WaybillRequest;
+import ua.kernel.dabbd.commons.serde.JacksonDeserializationSchema;
 
+import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -101,10 +102,27 @@ public class ReceiverConfig {
 
         @Override
         public WaybillRequest[] apply(byte[] t, Headers u) {
-            if (log.isDebugEnabled()) {
-                log.debug("=> Failed to deserialize WaybillRequest msg: '{}',\ttotal count: {}", new String(t), ++failedCounter);
+            if (log.isTraceEnabled()) {
+                log.trace("=> Failed to deserialize WaybillRequest msg: '{}',\ttotal count: {}", new String(t), ++failedCounter);
             }
-            return null;
+
+            JacksonDeserializationSchema<WaybillRequest> deserializationSchema = new JacksonDeserializationSchema<>(WaybillRequest.class);
+            String data = new String(t);
+            String data2 = data.substring(1, data.length() - 2);
+
+            String strippedWaybill = data2.replaceAll("\\n", "");
+
+            if (log.isTraceEnabled()) {
+                log.trace("Will try to deserialize WaybillRequest: '{} ... {}'", strippedWaybill.substring(0, 100), strippedWaybill.substring(strippedWaybill.length() - 100, strippedWaybill.length()));
+            }
+            WaybillRequest deserialize = null;
+            try {
+                deserialize = deserializationSchema.deserialize(strippedWaybill.getBytes());
+            } catch (IOException e) {
+                log.warn("Can't deserialize Waybill!", e);
+            }
+
+            return new WaybillRequest[]{deserialize};
         }
     }
 
