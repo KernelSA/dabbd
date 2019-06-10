@@ -111,8 +111,8 @@ public class ReceiverConfig {
             }
 
             String data = new String(t);
-            String data2 = data.replaceAll("\\s+", "");
-            String data3 =data2.replaceFirst("\\[","");
+            String data2 = data.replaceAll("\\s+", " ");
+            String data3 = data2.replaceFirst("\\[", "");
             String strippedWaybill = data3.substring(0, data3.lastIndexOf("]"));
 
             if (log.isTraceEnabled()) {
@@ -127,6 +127,7 @@ public class ReceiverConfig {
                     mapper = new ObjectMapper().registerModule(new JavaTimeModule());
                 }
                 deserialize = mapper.readValue(strippedWaybill.getBytes(), WaybillRequest.class);
+                log.trace("Deserialized Waybill: {}", deserialize);
             } catch (IOException e) {
                 log.warn("Can't deserialize Waybill!", e);
             }
